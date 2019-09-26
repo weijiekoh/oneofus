@@ -1,0 +1,30 @@
+**/build
+contracts/sol/semaphore/*
+config/*.yaml
+contracts/abi/
+frontend/server.cert
+frontend/server.key
+.etherlime-store/
+frontend/.cache/
+node_modules/
+lerna-debug.log
+.gitkeep
+
+# Swap
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Session
+Session.vim
+Sessionx.vim
+
+# Temporary
+.netrwhist
+*~
+# Auto-generated tag files
+tags
+# Persistent undo
+[._]*.un~

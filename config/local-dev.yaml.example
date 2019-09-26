@@ -1,0 +1,9 @@
+---
+env: 'local-dev'
+solcBinaryPath: '/usr/bin/solc'
+
+chain:
+  url: "http://localhost:8005"
+  nftAddress: "0x22C1f6050E56d2876009903609a2cC3fEf83B415"
+  keys:
+    deploy: '0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3'

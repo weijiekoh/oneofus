@@ -1,0 +1,14 @@
+{
+    "name": "attendees-only",
+    "private": true,
+    "scripts": {
+        "bootstrap": "lerna bootstrap",
+        "build": "lerna run build"
+    },
+    "devDependencies": {
+        "lerna": "^3.16.4"
+    },
+    "dependencies": {
+        "typescript": "^3.6.3"
+    }
+}
