@@ -4,6 +4,10 @@ import * as ethers from 'ethers'
 import { compileAndDeploy } from '../compileAndDeploy'
 const libsemaphore = require('libsemaphore')
 
+const extractRevertReason = (e: any) => {
+    return e.data[e.transactionHash].reason
+}
+
 jest.setTimeout(30000)
 let adminWallet
 
@@ -149,7 +153,3 @@ describe('the anonymous attendees-only forum app', () => {
         }
     })
 })
-
-const extractRevertReason = (e: any) => {
-    return e.data[e.transactionHash].reason
-}
