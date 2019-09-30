@@ -33,7 +33,12 @@ const buildMimcBytecode = () => {
 }
 
 const execute = (cmd: string) => {
-    return shell.exec(cmd, { silent: false })
+    const result = shell.exec(cmd, { silent: false })
+    if (result.code !== 0) {
+        throw 'Error executing ' + cmd
+    }
+
+    return result
 }
 
 const readFile = (abiDir: string, filename: string) => {
@@ -67,7 +72,7 @@ const compileAndDeploy = async (
     // compile contracts
     shell.mkdir('-p', abiDir)
     const solcCmd = `${solcBinaryPath} -o ${abiDir} ${solDir}/*.sol --overwrite --optimize --abi --bin`
-    execute(solcCmd)
+    const result = execute(solcCmd)
 
     // create provider and wallet
     const provider = new ethers.providers.JsonRpcProvider(rpcUrl)
