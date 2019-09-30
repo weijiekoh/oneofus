@@ -360,5 +360,13 @@ describe('the anonymous attendees-only forum app', () => {
                 .sub(receipt.gasUsed.mul(tx.gasPrice))
                 .add(relayAnswerReward)
         )
+
+
+        const event = receipt.logs[1]
+        const parsedLog = oouContract.interface.parseLog(event)
+        const answerIndex = parsedLog.values[0]
+
+        const retrievedAnswer = await oouContract.getAnswerByIndex(answerIndex.toString())
+        expect(retrievedAnswer).toEqual(answerHash)
     })
 })
