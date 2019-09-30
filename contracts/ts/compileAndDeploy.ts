@@ -113,7 +113,7 @@ const compileAndDeploy = async (
     const semaphoreAbi = readFile(abiDir, 'Semaphore.abi')
     const semaphoreBin = readFile(abiDir, 'Semaphore.bin')
     const semaphoreContractFactory = new ethers.ContractFactory(semaphoreAbi, semaphoreBin, wallet)
-    const semaphoreContract = await semaphoreContractFactory.deploy(12, 0, 0)
+    const semaphoreContract = await semaphoreContractFactory.deploy(config.chain.semaphoreTreeDepth, 0, 0)
     await semaphoreContract.deployed()
 
     console.log('Deployed Semaphore at', semaphoreContract.address)
