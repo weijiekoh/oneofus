@@ -42,6 +42,7 @@ const verifyingKey = parseVerifyingKeyJson(fs.readFileSync(verifyingKeyPath).toS
 
 let adminWallet
 
+let relayerWallet: ethers.Wallet
 const userWallets: ethers.Wallet[] = []
 const privateKeys = [
     '0x1111111111111111111111111111111111111111111111111111111111111111',
@@ -54,6 +55,17 @@ const genQuestionHash = (question: string): string => {
     const sizedBuf = Buffer.alloc(29, keccakHashed.slice(2), 'hex')
     return '0x' + sizedBuf.toString('hex')
 }
+
+const signForRegistration = (wallet, idComm, tokenId) => {
+    const payload = ethers.utils.defaultAbiCoder.encode(
+        ['uint256', 'uint256'],
+        [idComm, tokenId].map((x) => '0x' + x.toString(16)),
+    )
+    const hash = ethers.utils.keccak256(payload)
+
+    return wallet.signMessage(ethers.utils.arrayify(hash))
+}
+
 const question = 'Question'
 const questionHash = genQuestionHash(question)
 
@@ -81,10 +93,13 @@ describe('the anonymous attendees-only forum app', () => {
             )
         }
 
+        const randWallet = ethers.Wallet.createRandom()
+        relayerWallet = randWallet.connect(contracts.NFT.provider)
+
         // give away ETH
+        const amountEth = '1'
         for (let wallet of userWallets) {
             const address = wallet.address
-            const amountEth = '1'
             const tx = await adminWallet.provider.sendTransaction(
                 adminWallet.sign({
                     nonce: await adminWallet.provider.getTransactionCount(adminWallet.address),
@@ -98,7 +113,20 @@ describe('the anonymous attendees-only forum app', () => {
             await tx.wait()
             const balance = await adminWallet.provider.getBalance(address)
             expect(balance.gte(ethers.utils.parseEther(amountEth))).toBeTruthy()
+
         }
+
+        const tx2 = await adminWallet.provider.sendTransaction(
+            adminWallet.sign({
+                nonce: await adminWallet.provider.getTransactionCount(adminWallet.address),
+                gasPrice: 1,
+                gasLimit: 21000,
+                to: relayerWallet.address,
+                value: ethers.utils.parseEther(amountEth),
+                data: '0x'
+            })
+        )
+        await tx2.wait()
     })
 
     test('deploy contracts', async () => {
@@ -122,7 +150,28 @@ describe('the anonymous attendees-only forum app', () => {
         }
     })
 
+    test('Pre-fund the contract', async () => {
+        const oouContract = contracts.OneOfUs.connect(adminWallet)
+        const balanceBefore = await adminWallet.provider.getBalance(oouContract.address)
+
+        const amount = '10'
+        const tx = await adminWallet.provider.sendTransaction(
+            adminWallet.sign({
+                nonce: await adminWallet.provider.getTransactionCount(adminWallet.address),
+                gasPrice: 1,
+                gasLimit: 21040,
+                to: oouContract.address,
+                value: ethers.utils.parseEther(amount),
+            })
+        )
+
+        const balanceAfter = await adminWallet.provider.getBalance(oouContract.address)
+
+        expect(balanceAfter.sub(balanceBefore) / (10 ** 18)).toEqual(Number(amount))
+    })
+
     test('register identities', async () => {
+        expect.assertions(userWallets.length * 4)
         const idComms = {}
 
         let tokenId = 0;
@@ -135,13 +184,50 @@ describe('the anonymous attendees-only forum app', () => {
             identities[wallet.address] = identity
             idComms[wallet.address] = idComm
 
-            const oouContract = contracts.OneOfUs.connect(wallet)
+            // Ensure that the current wallet owns this token
+            const nftContract = contracts.NFT.connect(wallet)
+            expect(await nftContract.ownerOf(tokenId)).toEqual(wallet.address)
+
+            const sig = await signForRegistration(wallet, idComm, tokenId)
+
+            const oouContract = contracts.OneOfUs.connect(relayerWallet)
+
+            // Should fail with an invalid signature
+            try {
+                const tx = await oouContract.register(
+                    idComm.toString(),
+                    tokenId,
+                    '0x0000',
+                    { gasLimit: 900000 }, // setting the gasLimit overrides gas estimation
+                )
+                const receipt = await tx.wait()
+            } catch (e) {
+                expect(extractRevertReason(e)).toEqual('OneOfUs: signer does not own this token')
+            }
+
+            const balanceBefore = await relayerWallet.provider.getBalance(relayerWallet.address)
+
             const tx = await oouContract.register(
                 idComm.toString(),
                 tokenId,
+                sig,
+                {
+                    gasLimit: 1000000,
+                }
             )
             const receipt = await tx.wait()
+            console.log('Gas used to register an identity:', receipt.gasUsed.toString())
             expect(receipt.status).toEqual(1)
+
+            const balanceAfter = await relayerWallet.provider.getBalance(relayerWallet.address)
+
+            const relayRegisterReward = await oouContract.relayRegisterReward()
+            expect(balanceAfter.toString()).toEqual(
+                balanceBefore
+                    .sub(receipt.gasUsed.mul(tx.gasPrice))
+                    .add(relayRegisterReward)
+                    .toString()
+            )
 
             tokenId ++
         }
@@ -156,10 +242,14 @@ describe('the anonymous attendees-only forum app', () => {
 
         // token ID 0 was already used earlier
         const tokenId = 0
+
+        const sig = await signForRegistration(wallet, idComm, tokenId)
+
         try {
             const tx = await oouContract.register(
                 idComm.toString(),
                 tokenId,
+                sig,
                 { gasLimit: 900000 }, // setting the gasLimit overrides gas estimation
             )
             const receipt = await tx.wait()
@@ -168,7 +258,7 @@ describe('the anonymous attendees-only forum app', () => {
         }
     })
 
-    test('registration with a token from a different event should fail', async () => {
+    test('registration wits a token from a different event should fail', async () => {
         expect.assertions(1)
 
         const wallet = userWallets[0]
@@ -185,11 +275,13 @@ describe('the anonymous attendees-only forum app', () => {
         await mintTx.wait()
 
         const oouContract = contracts.OneOfUs.connect(wallet)
+        const sig = await signForRegistration(wallet, idComm, tokenId)
 
         try {
             const tx = await oouContract.register(
                 idComm.toString(),
                 tokenId,
+                sig,
                 { gasLimit: 900000 }, // setting the gasLimit overrides gas estimation
             )
             const receipt = await tx.wait()
@@ -201,7 +293,14 @@ describe('the anonymous attendees-only forum app', () => {
     test('posting a question should work', async () => {
         const wallet = userWallets[1]
         const oouContract = contracts.OneOfUs.connect(wallet)
-        const tx = await oouContract.postQuestion(questionHash)
+
+        const tx = await oouContract.postQuestion(
+            questionHash,
+            {
+                value: await oouContract.getPostQuestionFee(),
+            }
+        )
+
         const receipt = await tx.wait()
         console.log('Gas used for posting the question:', receipt.gasUsed.toString())
 
@@ -241,15 +340,25 @@ describe('the anonymous attendees-only forum app', () => {
 
         const registrationProof = formatForVerifierContract(proof, publicSignals)
 
+        const balanceBefore = await wallet.provider.getBalance(wallet.address)
         const tx = await oouContract.answerQuestion(
             answerHash,
-            registrationProof.proof.a,
-            registrationProof.proof.b,
-            registrationProof.proof.c,
+            registrationProof.a,
+            registrationProof.b,
+            registrationProof.c,
             registrationProof.input,
         )
         const receipt = await tx.wait()
         expect(receipt.status).toEqual(1)
         console.log('Gas used for the answer:', receipt.gasUsed.toString())
+
+        const balanceAfter = await wallet.provider.getBalance(wallet.address)
+
+        const relayAnswerReward = await oouContract.relayAnswerReward()
+        expect(balanceAfter).toEqual(
+            balanceBefore
+                .sub(receipt.gasUsed.mul(tx.gasPrice))
+                .add(relayAnswerReward)
+        )
     })
 })
