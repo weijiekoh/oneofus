@@ -1,14 +1,45 @@
 import { config } from 'ao-config'
 import * as path from 'path'
 import * as ethers from 'ethers'
+import * as fs from 'fs'
 import { compileAndDeploy } from '../compileAndDeploy'
-const libsemaphore = require('libsemaphore')
+import {
+    genIdentity,
+    genIdentityCommitment,
+    genPublicSignals,
+    verifyProof,
+    genWitness,
+    genCircuit,
+    genProof,
+    genTree,
+    parseVerifyingKeyJson,
+    formatForVerifierContract,
+} from 'libsemaphore'
 
 const extractRevertReason = (e: any) => {
     return e.data[e.transactionHash].reason
 }
 
 jest.setTimeout(30000)
+
+const circuitPath = path.join(
+    __dirname,
+    '../../../semaphore/semaphorejs/build/circuit.json',
+) 
+const provingKeyPath = path.join(
+    __dirname,
+    '../../../semaphore/semaphorejs/build/proving_key.bin',
+) 
+const verifyingKeyPath = path.join(
+    __dirname,
+    '../../../semaphore/semaphorejs/build/verification_key.json',
+) 
+
+const cirDef = JSON.parse(fs.readFileSync(circuitPath).toString())
+const circuit = genCircuit(cirDef)
+const provingKey = fs.readFileSync(provingKeyPath)
+const verifyingKey = parseVerifyingKeyJson(fs.readFileSync(verifyingKeyPath).toString())
+
 let adminWallet
 
 const userWallets: ethers.Wallet[] = []
@@ -16,6 +47,18 @@ const privateKeys = [
     '0x1111111111111111111111111111111111111111111111111111111111111111',
     '0x2222222222222222222222222222222222222222222222222222222222222222',
 ]
+
+
+const genQuestionHash = (question: string): string => {
+    const keccakHashed = ethers.utils.solidityKeccak256(['string'], [question])
+    const sizedBuf = Buffer.alloc(29, keccakHashed.slice(2), 'hex')
+    return '0x' + sizedBuf.toString('hex')
+}
+const question = 'Question'
+const questionHash = genQuestionHash(question)
+
+const answer = 'Answer'
+const answerHash = ethers.utils.solidityKeccak256(['string'], [answer])
 
 describe('the anonymous attendees-only forum app', () => {
     let contracts
@@ -58,13 +101,13 @@ describe('the anonymous attendees-only forum app', () => {
         }
     })
 
-    test ('deploy contracts', async () => {
+    test('deploy contracts', async () => {
         expect(contracts.OneOfUs.address).toHaveLength(42)
         expect(contracts.Semaphore.address).toHaveLength(42)
         expect(contracts.NFT.address).toHaveLength(42)
     })
 
-    test ('mint tokens', async () => {
+    test('mint tokens', async () => {
         expect(await contracts.NFT.isMinter(adminWallet.address)).toBeTruthy()
         let tokenId = 0
         for (let wallet of userWallets) {
@@ -79,13 +122,16 @@ describe('the anonymous attendees-only forum app', () => {
         }
     })
 
-    test ('register identities', async () => {
+    test('register identities', async () => {
         const idComms = {}
 
         let tokenId = 0;
         for (let wallet of userWallets) {
-            const identity = libsemaphore.genIdentity()
-            const idComm = libsemaphore.genIdentityCommitment(identity)
+            // generate identity and idcomm
+            const identity = genIdentity()
+            const idComm = genIdentityCommitment(identity)
+
+            // store identity and idcomm
             identities[wallet.address] = identity
             idComms[wallet.address] = idComm
 
@@ -101,10 +147,10 @@ describe('the anonymous attendees-only forum app', () => {
         }
     })
 
-    test ('double registration with the same token id should fail', async () => {
+    test('double registration with the same token id should fail', async () => {
         expect.assertions(1)
-        const identity = libsemaphore.genIdentity()
-        const idComm = libsemaphore.genIdentityCommitment(identity)
+        const identity = genIdentity()
+        const idComm = genIdentityCommitment(identity)
         const wallet = userWallets[0]
         const oouContract = contracts.OneOfUs.connect(wallet)
 
@@ -118,17 +164,16 @@ describe('the anonymous attendees-only forum app', () => {
             )
             const receipt = await tx.wait()
         } catch (e) {
-            expect(extractRevertReason(e)).toEqual('OneOfUs: token ID already registered')
+            expect(extractRevertReason(e)).toEqual('OneOfUs: token already registered')
         }
     })
 
-    test ('registration with a token from a different event should fail', async () => {
+    test('registration with a token from a different event should fail', async () => {
         expect.assertions(1)
 
         const wallet = userWallets[0]
 
-        //const identity = libsemaphore.genIdentity()
-        const idComm = libsemaphore.genIdentityCommitment(libsemaphore.genIdentity())
+        const idComm = genIdentityCommitment(genIdentity())
 
         // mint a token with a different event id
         const tokenId = 2
@@ -151,5 +196,60 @@ describe('the anonymous attendees-only forum app', () => {
         } catch (e) {
             expect(extractRevertReason(e)).toEqual('OneOfUs: wrong POAP event ID')
         }
+    })
+
+    test('posting a question should work', async () => {
+        const wallet = userWallets[1]
+        const oouContract = contracts.OneOfUs.connect(wallet)
+        const tx = await oouContract.postQuestion(questionHash)
+        const receipt = await tx.wait()
+        console.log('Gas used for posting the question:', receipt.gasUsed.toString())
+
+        const semaphoreContract = contracts.Semaphore.connect(wallet)
+        expect(await semaphoreContract.hasExternalNullifier(questionHash)).toBeTruthy()
+    })
+
+    test('answering a question should work', async () => {
+        const wallet = userWallets[0]
+        const identity = identities[wallet.address]
+
+        const oouContract = contracts.OneOfUs.connect(wallet)
+        const leaves = await oouContract.getLeaves()
+
+        expect(leaves[0].toString()).toEqual(genIdentityCommitment(identity).toString())
+
+        const semaphoreContract = contracts.Semaphore.connect(wallet)
+        const tree = await genTree(12, leaves)
+        const isInRootHistory = await semaphoreContract.isInRootHistory(await tree.root())
+
+        const result = await genWitness(
+            answerHash,
+            circuit,
+            identity,
+            leaves,
+            12,
+            BigInt(questionHash),
+        )
+
+        const witness = result.witness
+        expect(circuit.checkWitness(witness)).toBeTruthy()
+
+        const proof = await genProof(witness, provingKey)
+        const publicSignals = genPublicSignals(witness, circuit)
+
+        expect(verifyProof(verifyingKey, proof, publicSignals)).toBeTruthy()
+
+        const registrationProof = formatForVerifierContract(proof, publicSignals)
+
+        const tx = await oouContract.answerQuestion(
+            answerHash,
+            registrationProof.proof.a,
+            registrationProof.proof.b,
+            registrationProof.proof.c,
+            registrationProof.input,
+        )
+        const receipt = await tx.wait()
+        expect(receipt.status).toEqual(1)
+        console.log('Gas used for the answer:', receipt.gasUsed.toString())
     })
 })
