@@ -355,10 +355,10 @@ describe('the anonymous attendees-only forum app', () => {
         const balanceAfter = await wallet.provider.getBalance(wallet.address)
 
         const relayAnswerReward = await oouContract.relayAnswerReward()
-        expect(balanceAfter).toEqual(
+        expect(balanceAfter.toString()).toEqual(
             balanceBefore
                 .sub(receipt.gasUsed.mul(tx.gasPrice))
-                .add(relayAnswerReward)
+                .add(relayAnswerReward).toString()
         )
 
 

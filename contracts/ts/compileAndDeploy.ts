@@ -15,7 +15,10 @@
 //    by --out.
 // 3. Link the MiMC contract address to hardcoded contract(s) (just
 //    MerkleTreeLib for now)
-// 4. Deploy the rest of the contracts.
+// 4. Deploy the rest of the contracts, except for the RelayerReputation and RelayForwarder.
+// 5. Check whether bytecode exists on-chain at the addresses of
+//    RelayerReputation and RelayForwarder set in config.chain.contracts.
+// 6. If so, attach to them. Otherwise, deploy them.
 
 
 import { config } from 'ao-config'
@@ -53,6 +56,12 @@ const compileAndDeploy = async (
     deployKey: string = config.chain.keys.deploy,
     nftAddress?: string,
 ) => {
+
+    const readAbiAndBin = (name: string) => {
+        const abi = readFile(abiDir, name + '.abi')
+        const bin = readFile(abiDir, name + '.bin')
+        return { abi, bin }
+    }
 
     // copy Semaphore files
     const semaphorePathPrefix = '../semaphore/semaphorejs/contracts/'
@@ -110,35 +119,70 @@ const compileAndDeploy = async (
     }
 
     // deploy Semaphore
-    const semaphoreAbi = readFile(abiDir, 'Semaphore.abi')
-    const semaphoreBin = readFile(abiDir, 'Semaphore.bin')
-    const semaphoreContractFactory = new ethers.ContractFactory(semaphoreAbi, semaphoreBin, wallet)
+    const semaphoreAB = readAbiAndBin('Semaphore')
+    const semaphoreContractFactory = new ethers.ContractFactory(semaphoreAB.abi, semaphoreAB.bin, wallet)
     const semaphoreContract = await semaphoreContractFactory.deploy(config.chain.semaphoreTreeDepth, 0, 0)
     await semaphoreContract.deployed()
 
     console.log('Deployed Semaphore at', semaphoreContract.address)
 
     // deploy OneOfUs
-    const oouAbi = readFile(abiDir, 'OneOfUs.abi')
-    const oouBin = readFile(abiDir, 'OneOfUs.bin')
-    const oouContractFactory = new ethers.ContractFactory(oouAbi, oouBin, wallet)
+    const oouAB = readAbiAndBin('OneOfUs')
+    const oouContractFactory = new ethers.ContractFactory(oouAB.abi, oouAB.bin, wallet)
     const oouContract = await oouContractFactory.deploy(
         nftContract.address,
         semaphoreContract.address,
         config.chain.poapEventId,
     )
     await oouContract.deployed()
+    console.log('Deployed OneOfUs at', oouContract.address)
 
     // set the owner of the Semaphore contract to the OneOfUs contract address
     const tx = await semaphoreContract.transferOwnership(oouContract.address)
     await tx.wait()
     console.log('Transferred ownership of the Semaphore contract')
+
+    const rfAB = readAbiAndBin('RelayerForwarder')
+    const rfContractFactory = new ethers.ContractFactory(rfAB.abi, rfAB.bin, wallet)
+    let rfContract
+
+    // check whether the RelayerForwarder contract exists
+    const rfCode = await provider.getCode(config.chain.contracts.RelayerForwarder)
+    if (rfCode.length > 2) {
+        rfContract = rfContractFactory.attach(config.chain.contracts.RelayerForwarder)
+        console.log('Using existing RelayerForwarder at', config.chain.contracts.RelayerForwarder)
+    } else {
+        rfContract = await rfContractFactory.deploy(
+            config.chain.burnRegistry.burnNum,
+            config.chain.burnRegistry.burnDenom,
+        )
+        await rfContract.deployed()
+        console.log('Deployed RelayerForwarder at', rfContract.address)
+    }
+
+    const rrAB = readAbiAndBin('RelayerReputation')
+    const rrContractFactory = new ethers.ContractFactory(rrAB.abi, rrAB.bin, wallet)
+    let rrContract
+
+    // check whether the RelayerReputation contract exists
+    const rrCode = await provider.getCode(config.chain.contracts.RelayerReputation)
+    if (rrCode.length > 2) {
+        rrContract = rrContractFactory.attach(config.chain.contracts.RelayerReputation)
+        console.log('Using existing RelayerReputation at', config.chain.contracts.RelayerReputation)
+    } else {
+        rrContract = await rrContractFactory.deploy(rfContract.address
+        )
+        await rrContract.deployed()
+        console.log('Deployed RelayerReputation at', rrContract.address)
+    }
     
 	return {
 		MiMC: mimcContract,
 		Semaphore: semaphoreContract,
 		NFT: nftContract,
         OneOfUs: oouContract,
+        RelayerForwarder: rfContract,
+        RelayerReputation: rrContract,
 	}
 }
 
