@@ -75,12 +75,21 @@ const compileAndDeploy = async (
 
     shell.cp('-f', path.join(semaphorePathPrefix, '../build/verifier.sol'), semaphoreTargetPath)
 
+    // copy BurnRegistry files
+    const brPathPrefix = '../surrogeth/burnRegistry/contracts/'
+    const brTargetPath = path.join(solDir, 'burnRegistry')
+    shell.mkdir('-p', brTargetPath)
+    const brSolFiles = ['RelayerForwarder.sol', 'RelayerReputation.sol', 'Ownable.sol', 'SafeMath.sol']
+    for (let file of brSolFiles) {
+        shell.cp('-f', path.join(brPathPrefix, file), brTargetPath)
+    }
+
     // Build MiMC bytecode
     const mimcBin = buildMimcBytecode()
 
     // compile contracts
     shell.mkdir('-p', abiDir)
-    const solcCmd = `${solcBinaryPath} -o ${abiDir} ${solDir}/*.sol --overwrite --optimize --abi --bin`
+    const solcCmd = `${solcBinaryPath} -o ${abiDir} ${solDir}/*.sol ${solDir}/burnRegistry/*.sol --overwrite --optimize --abi --bin`
     const result = execute(solcCmd)
 
     // create provider and wallet
@@ -170,10 +179,12 @@ const compileAndDeploy = async (
         rrContract = rrContractFactory.attach(config.chain.contracts.RelayerReputation)
         console.log('Using existing RelayerReputation at', config.chain.contracts.RelayerReputation)
     } else {
-        rrContract = await rrContractFactory.deploy(rfContract.address
-        )
+        rrContract = await rrContractFactory.deploy(rfContract.address)
         await rrContract.deployed()
         console.log('Deployed RelayerReputation at', rrContract.address)
+
+        const tx = await rfContract.setReputation(rrContract.address)
+        await tx.wait()
     }
     
 	return {

@@ -2,6 +2,7 @@ import { config } from 'ao-config'
 import * as path from 'path'
 import * as ethers from 'ethers'
 import * as fs from 'fs'
+import { signForRegistration } from '../index'
 import { compileAndDeploy } from '../compileAndDeploy'
 import {
     genIdentity,
@@ -54,16 +55,6 @@ const genQuestionHash = (question: string): string => {
     const keccakHashed = ethers.utils.solidityKeccak256(['string'], [question])
     const sizedBuf = Buffer.alloc(29, keccakHashed.slice(2), 'hex')
     return '0x' + sizedBuf.toString('hex')
-}
-
-const signForRegistration = (wallet, idComm, tokenId) => {
-    const payload = ethers.utils.defaultAbiCoder.encode(
-        ['uint256', 'uint256'],
-        [idComm, tokenId].map((x) => '0x' + x.toString(16)),
-    )
-    const hash = ethers.utils.keccak256(payload)
-
-    return wallet.signMessage(ethers.utils.arrayify(hash))
 }
 
 const question = 'Question'
@@ -164,6 +155,7 @@ describe('the anonymous attendees-only forum app', () => {
                 value: ethers.utils.parseEther(amount),
             })
         )
+        await tx.wait()
 
         const balanceAfter = await adminWallet.provider.getBalance(oouContract.address)
 
@@ -171,7 +163,7 @@ describe('the anonymous attendees-only forum app', () => {
     })
 
     test('register identities', async () => {
-        expect.assertions(userWallets.length * 4)
+        expect.assertions(userWallets.length * 5)
         const idComms = {}
 
         let tokenId = 0;
@@ -220,6 +212,8 @@ describe('the anonymous attendees-only forum app', () => {
             expect(receipt.status).toEqual(1)
 
             const balanceAfter = await relayerWallet.provider.getBalance(relayerWallet.address)
+
+            expect(balanceAfter.gte(balanceBefore)).toBeTruthy()
 
             const relayRegisterReward = await oouContract.relayRegisterReward()
             expect(balanceAfter.toString()).toEqual(

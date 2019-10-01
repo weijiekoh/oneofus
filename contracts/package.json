@@ -9,8 +9,10 @@
         "compileAndDeploy": "node build/compileAndDeploy.js -s ~/solc-0.5.11 -o ./abi -i ./sol/",
         "compileAndDeployProd": "node build/compileAndDeploy.js -s ~/solc-0.5.11 -o ./abi -i ./sol/ -m",
         "build": "tsc",
-        "test": "NODE_ENV=local-dev jest",
-        "test-debug": "NODE_ENV=local-dev node --inspect-brk ./node_modules/.bin/jest --testPathPattern=__tests__/"
+        "test-oou": "NODE_ENV=local-dev jest ts/__tests__/OneOfUs.test.ts",
+        "test-oou-debug": "NODE_ENV=local-dev node --inspect-brk ./node_modules/.bin/jest --testPathPattern=__tests__/OneOfUs.test.ts",
+        "test-surrogeth": "NODE_ENV=local-dev jest ts/__tests__/Surrogeth.test.ts",
+        "test-surrogeth-debug": "NODE_ENV=local-dev node --inspect-brk ./node_modules/.bin/jest --testPathPattern=__tests__/Surrogeth.test.ts"
     },
     "author": "Koh Wei Jie",
     "dependencies": {
@@ -29,6 +31,7 @@
         "@types/jest": "^24.0.15",
         "@types/node": "^12.7.7",
         "argparse": "1.0.10",
-        "shelljs": "0.8.3"
+        "shelljs": "0.8.3",
+        "axios": "0.19.0"
     }
 }
