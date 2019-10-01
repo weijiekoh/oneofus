@@ -3,8 +3,9 @@ pragma solidity ^0.5.11;
 import { Poap } from "./Poap.sol";
 import { Semaphore } from "./semaphore/Semaphore.sol";
 import { ECDSA } from "./oz-2.3.0-contracts/cryptography/ECDSA.sol";
+import { Ownable } from "./oz-2.3.0-contracts/ownership/Ownable.sol";
 
-contract OneOfUs {
+contract OneOfUs is Ownable {
     // The POAP token contract
     Poap public poap;
 
@@ -43,6 +44,30 @@ contract OneOfUs {
      * Anyone may pre-fund this contract
      */
     function () external payable {}
+
+    /*
+     * @param _newAmt The new amount to set
+     * Sets the value of postQuestionFee. Only the owner can do this.
+     */
+    function setPostQuestionFee(uint256 _newAmt) public onlyOwner {
+        postQuestionFee = _newAmt;
+    }
+
+    /*
+     * @param _newAmt The new amount to set
+     * Sets the value of relayRegisterReward. Only the owner can do this.
+     */
+    function setRelayRegisterReward(uint256 _newAmt) public onlyOwner {
+        relayRegisterReward = _newAmt;
+    }
+
+    /*
+     * @param _newAmt The new amount to set
+     * Sets the value of relayAnswerReward. Only the owner can do this.
+     */
+    function setRelayAnswerReward(uint256 _newAmt) public onlyOwner {
+        relayAnswerReward = _newAmt;
+    }
 
     /*
      * @param _tokenId The ERC721 POAP token ID
