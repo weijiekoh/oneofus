@@ -4,6 +4,9 @@ config/*.yaml
 contracts/abi/
 frontend/server.cert
 frontend/server.key
+frontend/dist/*
+frontend/ts/abi/*
+frontend/ts/exported_config.json
 .etherlime-store/
 frontend/.cache/
 node_modules/
