@@ -25,3 +25,71 @@ those who submit questions.
 Under the hood, OneOfUs uses
 [Semaphore](https://github.com/kobigurk/semaphore), a zero-knowledge signalling
 gadget. Read more about it [here](https://medium.com/coinmonks/to-mixers-and-beyond-presenting-semaphore-a-privacy-gadget-built-on-ethereum-4c8b00857c9b).
+
+### Backend API
+
+#### oou_post_qn
+
+Parameters:
+
+- `question` as a `string` which is the plaintext of the question. Max 280 characters.
+
+- `sig` as an `ethereumSignature` which is the signature of the question hashed with Keccak256
+
+Returns:
+
+If the signature is signed by a registered user, return:
+
+- `questionHash` as a `bytes32` which is the Keccak256 hash of the question
+
+Otherwise, return an `NO_SUCH_USER` error.
+
+If the signature is invalid (i.e. of an incorrect length), return an `INVALID_SIG` error.
+
+#### oou_list_qns
+
+Parameters: none
+
+Returns:
+
+- `questions`: as an list of objects. Each object contains the following keys:
+
+    - `datetime` as a `number`: the time at which the question was posted, in Unix time
+
+    - `question` as a `string`: the text of the question
+    
+    - `sig` as the signature provided by the user who posted the question
+
+#### oou_post_answer
+
+Parameters:
+
+- `questionHash` as a `string` which is the Keccak256 hash of the question
+
+- `answer` as a `string` which is the answer to the question
+
+- `proof` as a `string` which is the stringified JSON representaiton of the
+  zk-SNARK proof of the user's membership in the list of registered users. All
+  `BigInts` should be in string form.
+
+If the proof is valid, return:
+
+- `answerHash` as a `hexstring` which is the Keccak256 hash of the answer
+
+Otherwise, return an `INVALID_PROOF` error.
+
+#### oou_list_answers
+
+Parameters:
+
+- `questionHash` as a `string` which is the Keccak256 hash of the question
+
+Returns:
+
+- `answer`: as an list of objects. Each object contains the following keys:
+
+    - `datetime` as a `number`: the time at which the answer was posted, in Unix time
+
+    - `answer` as a `string`: the text of the answer
+    
+    - `proof` as the zk-SNARK proof provided by the user who posted the answer

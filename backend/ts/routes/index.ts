@@ -2,6 +2,7 @@ import * as Koa from 'koa';
 import * as JsonRpc from '../jsonRpc'
 import * as Ajv from 'ajv'
 import echoRoute from './echo'
+import postQnRoute from './postQn'
 import backendStatusRoute from './status'
 import { config } from 'ao-config'
 
@@ -12,11 +13,12 @@ interface Route {
 
 // Define routes here
 const routes = {
+    oou_post_qn: postQnRoute,
 }
 
 // Dev-only routes for testing
 if (config.get('env') !== 'production') {
-    routes['ao_echo'] = echoRoute
+    routes['test_echo'] = echoRoute
 }
 
 // Invoke the route
@@ -24,6 +26,7 @@ const handle = async (reqData: JsonRpc.Request) => {
     try {
         const route = routes[reqData.method]
 
+        // validate the request params
         if (route.reqValidator(reqData.params)) {
             const result = await route.route(reqData.params)
 

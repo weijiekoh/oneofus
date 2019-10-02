@@ -82,7 +82,7 @@ describe('Backend API', () => {
 
     test('handles the echo method', async () => {
         const message = 'hello'
-        const resp = await post(1, 'ao_echo', { message })
+        const resp = await post(1, 'test_echo', { message })
 
         expect(resp.status).toEqual(200)
         expect(resp.data.result.message).toEqual(message)
@@ -94,7 +94,7 @@ describe('Backend API', () => {
             data.push({
                 id: i,
                 jsonrpc: '2.0',
-                method: 'ao_echo',
+                method: 'test_echo',
                 params: {
                     message: i,
                 }
@@ -122,7 +122,7 @@ describe('Backend API', () => {
     })
 
     test('correct error handling by the echo method', async () => {
-        const resp = await post(1, 'ao_echo', { message: '' })
+        const resp = await post(1, 'test_echo', { message: '' })
 
         expect(resp.status).toEqual(200)
         expect(resp.data.error.code).toEqual(errors.errorCodes.BACKEND_ECHO_MSG_BLANK)
