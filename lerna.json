@@ -1,7 +1,9 @@
 {
   "packages": [
     "contracts",
-    "config"
+    "config",
+    "frontend",
+    "backend"
   ],
   "version": "0.0.1",
   "npmClient": "npm"
