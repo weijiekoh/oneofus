@@ -13,7 +13,7 @@ import { signForRegistration } from '../index'
 jest.setTimeout(60000)
 
 const SURROGETH_URL = config.surrogeth.url
-let relayerWallet
+let relayerWalletAddress = config.surrogeth.relayerWalletAddress
 let adminWallet
 const userWallets: ethers.Wallet[] = []
 const privateKeys = [
@@ -33,7 +33,6 @@ describe('interact with OneOfUs via surrogeth', () => {
         )
 
         adminWallet = new ethers.Wallet(config.chain.keys.deploy, contracts.NFT.provider)
-        relayerWallet = new ethers.Wallet(config.chain.keys.relayer, contracts.NFT.provider)
 
         // fund the relayerWallet
         const tx = await adminWallet.provider.sendTransaction(
@@ -41,7 +40,7 @@ describe('interact with OneOfUs via surrogeth', () => {
                 nonce: await adminWallet.provider.getTransactionCount(adminWallet.address),
                 gasPrice: 1,
                 gasLimit: 21000,
-                to: relayerWallet.address,
+                to: relayerWalletAddress,
                 value: ethers.utils.parseEther('1'),
                 data: '0x'
             })
@@ -85,7 +84,7 @@ describe('interact with OneOfUs via surrogeth', () => {
 
     test('surrogeth is up and has the correct relayer wallet', async () => {
         const response = await axios.get(SURROGETH_URL + '/address')
-        expect(response.data.address).toEqual(relayerWallet.address)
+        expect(response.data.address).toEqual(relayerWalletAddress)
     })
 
     test('the forwarder contract knows about the reputation contract', async () => {
@@ -99,8 +98,8 @@ describe('interact with OneOfUs via surrogeth', () => {
         const rfContract = contracts.RelayerForwarder.connect(adminWallet)
         const rrContract = contracts.RelayerReputation.connect(adminWallet)
 
-        const amtBurntBefore = await rrContract.relayerToBurn(relayerWallet.address)
-        const relayCountBefore = await rrContract.relayerToRelayCount(relayerWallet.address)
+        const amtBurntBefore = await rrContract.relayerToBurn(relayerWalletAddress)
+        const relayCountBefore = await rrContract.relayerToRelayCount(relayerWalletAddress)
 
         const identity = genIdentity()
         const idComm = genIdentityCommitment(identity)
@@ -133,8 +132,8 @@ describe('interact with OneOfUs via surrogeth', () => {
         expect(response.data.txHash.startsWith('0x')).toBeTruthy()
         expect(response.data.txHash).toHaveLength(66)
 
-        const amtBurntAfter = await rrContract.relayerToBurn(relayerWallet.address)
-        const relayCountAfter = await rrContract.relayerToRelayCount(relayerWallet.address)
+        const amtBurntAfter = await rrContract.relayerToBurn(relayerWalletAddress)
+        const relayCountAfter = await rrContract.relayerToRelayCount(relayerWalletAddress)
 
         expect(amtBurntAfter.gt(amtBurntBefore)).toBeTruthy()
         expect(relayCountAfter.gt(relayCountBefore)).toBeTruthy()

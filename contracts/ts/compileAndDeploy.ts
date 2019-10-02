@@ -266,6 +266,11 @@ if (require.main === module) {
     const nftAddress = args.mainnet ? config.chain.nftAddress : null
 
     compileAndDeploy(abiDir, solDir, solcBinaryPath, rpcUrl, deployKey, nftAddress)
+
+    //mkdir -p ../frontend/ts
+    //cp -r compiled/abis ../frontend/ts/
+    shell.mkdir('-p', '../frontend/ts/abi/')
+    shell.cp('-R', path.join(abiDir, '*.abi'), '../frontend/ts/abi')
 }
 
 export {

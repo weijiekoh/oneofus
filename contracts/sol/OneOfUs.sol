@@ -153,6 +153,18 @@ contract OneOfUs is Ownable {
     }
 
     /*
+     * Returns all question hashes
+     */
+    function getQuestions() public view returns (uint256[] memory) {
+        uint256 limit = semaphore.getNextExternalNullifierIndex();
+        uint256[] memory result = new uint256[](limit);
+        for (uint256 i; i < limit; i++){
+            result[i] = semaphore.getExternalNullifierByIndex(i);
+        }
+        return result;
+    }
+
+    /*
      * @param _questionHash The hash of the question
      * Returns true/false depending on whether _questionHash had previously
      * been posted.

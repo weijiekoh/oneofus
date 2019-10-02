@@ -300,6 +300,8 @@ describe('the anonymous attendees-only forum app', () => {
 
         const semaphoreContract = contracts.Semaphore.connect(wallet)
         expect(await semaphoreContract.hasExternalNullifier(questionHash)).toBeTruthy()
+        const questions = await oouContract.getQuestions()
+        console.log(questions)
     })
 
     //test('answering a question should work', async () => {
@@ -364,35 +366,35 @@ describe('the anonymous attendees-only forum app', () => {
         //expect(retrievedAnswer).toEqual(answerHash)
     //})
 
-    test('fee and reward setters', async () => {
-        const oouContract = contracts.OneOfUs.connect(adminWallet)
+    //test('fee and reward setters', async () => {
+        //const oouContract = contracts.OneOfUs.connect(adminWallet)
 
-        const newVal = ethers.utils.bigNumberify(1)
-        // postQuestionFee
-        let originalVal = await oouContract.getPostQuestionFee()
-        let tx = await oouContract.setPostQuestionFee(newVal)
-        await tx.wait()
-        expect(await oouContract.getPostQuestionFee()).toEqual(newVal)
-        tx = await oouContract.setPostQuestionFee(originalVal)
-        expect(await oouContract.getPostQuestionFee()).toEqual(originalVal)
-        await tx.wait()
+        //const newVal = ethers.utils.bigNumberify(1)
+        //// postQuestionFee
+        //let originalVal = await oouContract.getPostQuestionFee()
+        //let tx = await oouContract.setPostQuestionFee(newVal)
+        //await tx.wait()
+        //expect(await oouContract.getPostQuestionFee()).toEqual(newVal)
+        //tx = await oouContract.setPostQuestionFee(originalVal)
+        //expect(await oouContract.getPostQuestionFee()).toEqual(originalVal)
+        //await tx.wait()
 
-        // relayRegisterReward
-        originalVal = await oouContract.getRelayRegisterReward()
-        tx = await oouContract.setRelayRegisterReward(newVal)
-        await tx.wait()
-        expect(await oouContract.getRelayRegisterReward()).toEqual(newVal)
-        tx = await oouContract.setRelayRegisterReward(originalVal)
-        expect(await oouContract.getRelayRegisterReward()).toEqual(originalVal)
-        await tx.wait()
+        //// relayRegisterReward
+        //originalVal = await oouContract.getRelayRegisterReward()
+        //tx = await oouContract.setRelayRegisterReward(newVal)
+        //await tx.wait()
+        //expect(await oouContract.getRelayRegisterReward()).toEqual(newVal)
+        //tx = await oouContract.setRelayRegisterReward(originalVal)
+        //expect(await oouContract.getRelayRegisterReward()).toEqual(originalVal)
+        //await tx.wait()
 
-        // relayAnswerReward
-        originalVal = await oouContract.getRelayAnswerReward()
-        tx = await oouContract.setRelayAnswerReward(newVal)
-        await tx.wait()
-        expect(await oouContract.getRelayAnswerReward()).toEqual(newVal)
-        tx = await oouContract.setRelayAnswerReward(originalVal)
-        expect(await oouContract.getRelayAnswerReward()).toEqual(originalVal)
-        await tx.wait()
-    })
+        //// relayAnswerReward
+        //originalVal = await oouContract.getRelayAnswerReward()
+        //tx = await oouContract.setRelayAnswerReward(newVal)
+        //await tx.wait()
+        //expect(await oouContract.getRelayAnswerReward()).toEqual(newVal)
+        //tx = await oouContract.setRelayAnswerReward(originalVal)
+        //expect(await oouContract.getRelayAnswerReward()).toEqual(originalVal)
+        //await tx.wait()
+    //})
 })

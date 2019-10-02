@@ -1,0 +1,30 @@
+/*@import (less) '../constants.less';*/
+
+#wallet-widget {
+    .circle-icon {
+        width: 10px;
+        margin-right: 8px;
+
+        &.ok {
+            fill: @bulma-success;
+        }
+
+        &.fail {
+            fill: @bulma-failure;
+        }
+
+        &.warn {
+            fill: @bulma-warn;
+        }
+    }
+
+    @media screen and (max-width: @bulma-mobile) {
+        .address {
+            display:inline-block;
+            white-space: nowrap; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 10ch;
+        }
+    }
+}
