@@ -10,7 +10,7 @@ const echo = async ({ message }) => {
             code: errors.errorCodes.BACKEND_ECHO_MSG_BLANK,
             message: errorMsg,
             data: errors.genError(
-                errors.MixerErrorNames.BACKEND_ECHO_MSG_BLANK,
+                errors.BackendErrorNames.BACKEND_ECHO_MSG_BLANK,
                 errorMsg,
             )
         }
