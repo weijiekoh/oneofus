@@ -1,8 +1,9 @@
 pragma solidity ^0.5.0;
 
 import { ERC721Mintable } from "./oz-2.3.0-contracts/token/ERC721/ERC721Mintable.sol";
+import { ERC721Enumerable } from "./oz-2.3.0-contracts/token/ERC721/ERC721Enumerable.sol";
 
-contract Poap is ERC721Mintable {
+contract Poap is ERC721Mintable, ERC721Enumerable {
     // EventId for each token
     mapping(uint256 => uint256) private _tokenEvent;
 
