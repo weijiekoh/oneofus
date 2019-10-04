@@ -41,6 +41,10 @@ const Nav = () => {
                     <a className='navbar-item' href='/register'>
                         Register
                     </a>
+
+                    <a className='navbar-item' href='/vote'>
+                        Vote
+                    </a>
                 </div>
             </div>
         </nav>

@@ -9,6 +9,11 @@ import {
     genIdentity,
     genIdentityCommitment,
 } from 'libsemaphore'
+import {
+    initStorage,
+    storeId,
+    retrieveId,
+} from '../storage'
 
 
 enum TxStatuses {
@@ -20,11 +25,20 @@ const etherscanUrl = (txHash: string) => {
 }
 
 const RegisterRoute = () => {
+    initStorage()
+
     const context = useWeb3Context()
     const [tokenId, setTokenId] = useState('')
     const [identityJSON, setIdentityJSON] = useState('')
     const [registerTxHash, setRegisterTxHash] = useState('')
     const [registerTxStatus, setRegisterTxStatus] = useState(TxStatuses.None)
+
+    let identity
+    const idStr = retrieveId()
+    if (!idStr || idStr.length === 0) {
+        identity = genIdentity()
+        storeId(identity)
+    }
 
     getTokenIds(context).then((tokenIds) => {
         if (tokenIds && tokenIds.length > 0) {
@@ -33,7 +47,6 @@ const RegisterRoute = () => {
     })
 
     const handleRegisterBtnClick = async () => {
-        const identity = genIdentity()
         const identityCommitment = genIdentityCommitment(identity)
 
         const tx = await register(context, '0x' + identityCommitment.toString(16), tokenId)

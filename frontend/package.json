@@ -18,7 +18,7 @@
         "ao-config": "1.0.0",
         "bulma": "^0.7.5",
         "ethers": "^4.0.37",
-        "libsemaphore": "0.0.6",
+        "libsemaphore": "^0.0.10",
         "react": "^16.10.1",
         "react-dom": "^16.10.1",
         "react-router-dom": "^5.1.2",
