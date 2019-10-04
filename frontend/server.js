@@ -16,6 +16,9 @@ const server = new ParcelProxyServer({
     autoinstall: false,
   },
   proxies: {
+    '/api': {
+      target: 'http://localhost:8002/'
+    },
     '/build': {
       target: 'http://localhost:8000/'
     }

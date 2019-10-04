@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Route } from 'react-router-dom'
 import Web3Provider from 'web3-react'
 
 import Nav from './nav'
+import RegisterRoute from './routes/register'
 import AboutRoute from './routes/about'
 import MainRoute from './routes/main'
 import connectors from './web3'
@@ -25,6 +26,7 @@ const App = () => {
                         <Router>
                             <Route path='/' exact component={MainRoute} />
                             <Route path='/about' exact component={AboutRoute} />
+                            <Route path='/register' exact component={RegisterRoute} />
                         </Router>
                     </div>
                 </div>

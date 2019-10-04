@@ -196,7 +196,40 @@ const compileAndDeploy = async (
         shell.cp('-R', file, `../backend/abi/${baseName}.json`)
         shell.cp('-R', file, `../frontend/abi/${baseName}.json`)
     })
-    
+
+    if (config.chain.fundAndMintForTesting) {
+        let i = 0
+
+        for (let address of config.chain.fundAndMintForTesting) {
+            let tx
+
+            const id = Date.now() + i
+
+            tx = await nftContract.mintToken(
+                config.chain.poapEventId,
+                id,
+                address,
+            )
+            await tx.wait()
+            console.log('Minted tokens to', address, 'with token ID', id)
+
+            tx = await wallet.provider.sendTransaction(
+                wallet.sign({
+                    nonce: await wallet.provider.getTransactionCount(wallet.address),
+                    gasPrice: 1,
+                    gasLimit: 21000,
+                    to: address,
+                    value: ethers.utils.parseEther('1'),
+                    data: '0x'
+                })
+            )
+            let receipt = await tx.wait()
+            console.log('Gave away ETH to', address)
+
+            i ++
+        }
+    }
+
 	return {
 		MiMC: mimcContract,
 		Semaphore: semaphoreContract,
@@ -207,9 +240,6 @@ const compileAndDeploy = async (
 	}
 }
 
-//function delay(milliseconds: number): Promise<void> {
-    //return new Promise((resolve: Function) => setTimeout(resolve, milliseconds))
-//}
 
 if (require.main === module) {
     const parser = new ArgumentParser({
