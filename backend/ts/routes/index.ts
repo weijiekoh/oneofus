@@ -3,6 +3,9 @@ import * as JsonRpc from '../jsonRpc'
 import * as Ajv from 'ajv'
 import echoRoute from './echo'
 import postQnRoute from './postQn'
+import listQnsRoute from './listQns'
+import listAnsRoute from './listAns'
+import postAnsRoute from './postAns'
 import backendStatusRoute from './status'
 import { config } from 'ao-config'
 
@@ -14,6 +17,9 @@ interface Route {
 // Define routes here
 const routes = {
     oou_post_qn: postQnRoute,
+    oou_list_qns: listQnsRoute,
+    oou_post_ans: postAnsRoute,
+    oou_list_ans: listAnsRoute,
 }
 
 // Dev-only routes for testing
@@ -23,14 +29,24 @@ if (config.get('env') !== 'production') {
 
 // Invoke the route
 const handle = async (reqData: JsonRpc.Request) => {
+    if (Object.keys(routes).indexOf(reqData.method) === -1) {
+        return JsonRpc.genErrorResponse(
+            reqData.id, 
+            JsonRpc.Errors.methodNotFound.code,
+            JsonRpc.Errors.methodNotFound.message,
+        )
+    }
+
     try {
         const route = routes[reqData.method]
 
         // validate the request params
-        if (route.reqValidator(reqData.params)) {
+        const validParams = route.reqValidator ? route.reqValidator(reqData.params) : true
+        if (validParams) {
             const result = await route.route(reqData.params)
 
             return JsonRpc.genSuccessResponse(reqData.id, result)
+
         } else {
 
             return JsonRpc.genErrorResponse(

@@ -1,0 +1,22 @@
+{
+    "title": "Post an answer",
+    "decription": "Parameters for a request to the oou_post_answer JSON-RPC method",
+    "required": ["questionHash", "answer", "proof"],
+    "additionalProperties": false,
+    "properties": {
+        "questionHash": {
+            "type": "string",
+            "length": 66
+        },
+        "answer": {
+            "type": "string"
+        },
+        "proof": {
+            "type": "string"
+        },
+        "publicSignals": {
+            "type": "string"
+        }
+    }
+}
+

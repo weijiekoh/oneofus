@@ -1,5 +1,5 @@
 import * as ethers from 'ethers'
-import { signForRegistration, genQuestionHash, cutOrExpandHexToBytes } from '../index'
+import { genQuestionHash, cutOrExpandHexToBytes } from '../index'
 
 describe('Helper functions for generating a 29-byte quesiton hash', () => {
     test('cutOrExpandHexToBytes() should always return a 29-byte hex string', () => {

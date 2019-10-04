@@ -1,11 +1,15 @@
 {
-    "title": "An echo request for testing",
-    "decription": "Parameters for a request to the test test_echo JSON-RPC method",
-    "required": ["question", "sig"],
+    "title": "Post a question",
+    "decription": "Parameters for a request to the oou_post_qn JSON-RPC method",
+    "required": ["question", "tokenId", "sig"],
     "additionalProperties": false,
     "properties": {
         "question": {
             "type": "string"
+        },
+        "tokenId": {
+            "type": "integer",
+            "minimum": 0
         },
         "sig": {
             "$ref": "definitions#/definitions/ethereumSignature" 

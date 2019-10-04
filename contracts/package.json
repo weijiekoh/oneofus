@@ -15,11 +15,15 @@
         "test-surrogeth-debug": "NODE_ENV=local-dev node --inspect-brk ./node_modules/.bin/jest --testPathPattern=__tests__/Surrogeth.test.ts"
     },
     "author": "Koh Wei Jie",
+    "_moduleAliases": {
+      "@ao-contracts": "."
+    },
     "dependencies": {
         "ao-config": "1.0.0",
         "circom": "0.0.33",
         "circomlib": "0.0.18",
         "ethers": "4.0.37",
+        "module-alias": "^2.2.0",
         "ganache-cli": "^6.7.0",
         "jest": "^24.9.0",
         "libsemaphore": "^0.0.6",

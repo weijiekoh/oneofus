@@ -186,6 +186,16 @@ const compileAndDeploy = async (
         const tx = await rfContract.setReputation(rrContract.address)
         await tx.wait()
     }
+
+    // Copy ABIs to the frontend and backend modules
+    shell.mkdir('-p', '../frontend/abi/')
+
+   shell.mkdir('-p', '../backend/abi/')
+    shell.ls(path.join(abiDir, '*.abi')).forEach((file) => {
+        const baseName = path.basename(file)
+        shell.cp('-R', file, `../backend/abi/${baseName}.json`)
+        shell.cp('-R', file, `../frontend/abi/${baseName}.json`)
+    })
     
 	return {
 		MiMC: mimcContract,
@@ -266,11 +276,6 @@ if (require.main === module) {
     const nftAddress = args.mainnet ? config.chain.nftAddress : null
 
     compileAndDeploy(abiDir, solDir, solcBinaryPath, rpcUrl, deployKey, nftAddress)
-
-    //mkdir -p ../frontend/ts
-    //cp -r compiled/abis ../frontend/ts/
-    shell.mkdir('-p', '../frontend/ts/abi/')
-    shell.cp('-R', path.join(abiDir, '*.abi'), '../frontend/ts/abi')
 }
 
 export {

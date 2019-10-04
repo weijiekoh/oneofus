@@ -15,6 +15,7 @@
         "worker_threads": "./externals/worker_threads.js"
     },
     "dependencies": {
+        "ao-config": "1.0.0",
         "bulma": "^0.7.5",
         "ethers": "^4.0.37",
         "libsemaphore": "0.0.6",

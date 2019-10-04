@@ -2,7 +2,7 @@ import { config } from 'ao-config'
 import * as path from 'path'
 import * as ethers from 'ethers'
 import * as fs from 'fs'
-import { signForRegistration, genQuestionHash } from '../index'
+import { genQuestionHash } from '../index'
 import { compileAndDeploy } from '../compileAndDeploy'
 import {
     genIdentity,
@@ -123,15 +123,15 @@ describe('the anonymous attendees-only forum app', () => {
         expect(await contracts.NFT.isMinter(adminWallet.address)).toBeTruthy()
         let tokenId = 0
         for (let wallet of userWallets) {
-            await contracts.NFT.mintToken(config.chain.poapEventId, tokenId, wallet.address)
-            tokenId ++
-        }
-
-        tokenId = 0
-        for (let wallet of userWallets) {
+            const tx = await contracts.NFT.mintToken(config.chain.poapEventId, tokenId, wallet.address)
+            await tx.wait()
             expect(await contracts.NFT.ownerOf(tokenId)).toEqual(wallet.address)
             tokenId ++
         }
+
+        // mint a second token to address 0
+        const tx = await contracts.NFT.mintToken(config.chain.poapEventId, tokenId, userWallets[0].address)
+        await tx.wait()
     })
 
     test('Pre-fund the contract', async () => {
@@ -156,7 +156,7 @@ describe('the anonymous attendees-only forum app', () => {
     })
 
     test('register identities', async () => {
-        expect.assertions(userWallets.length * 5)
+        expect.assertions(userWallets.length * 3)
         const idComms = {}
 
         let tokenId = 0;
@@ -173,16 +173,14 @@ describe('the anonymous attendees-only forum app', () => {
             const nftContract = contracts.NFT.connect(wallet)
             expect(await nftContract.ownerOf(tokenId)).toEqual(wallet.address)
 
-            const sig = await signForRegistration(wallet, idComm, tokenId)
+            const oouContract = contracts.OneOfUs.connect(wallet)
 
-            const oouContract = contracts.OneOfUs.connect(relayerWallet)
-
-            // Should fail with an invalid signature
+            // Should fail with an the wrong user msg sender
             try {
-                const tx = await oouContract.register(
+                const oouContract2 = contracts.OneOfUs.connect(adminWallet)
+                const tx = await oouContract2.register(
                     idComm.toString(),
                     tokenId,
-                    '0x0000',
                     { gasLimit: 900000 }, // setting the gasLimit overrides gas estimation
                 )
                 const receipt = await tx.wait()
@@ -190,12 +188,9 @@ describe('the anonymous attendees-only forum app', () => {
                 expect(extractRevertReason(e)).toEqual('OneOfUs: signer does not own this token')
             }
 
-            const balanceBefore = await relayerWallet.provider.getBalance(relayerWallet.address)
-
             const tx = await oouContract.register(
                 idComm.toString(),
                 tokenId,
-                sig,
                 {
                     gasLimit: 1000000,
                 }
@@ -204,20 +199,17 @@ describe('the anonymous attendees-only forum app', () => {
             console.log('Gas used to register an identity:', receipt.gasUsed.toString())
             expect(receipt.status).toEqual(1)
 
-            const balanceAfter = await relayerWallet.provider.getBalance(relayerWallet.address)
-
-            expect(balanceAfter.gte(balanceBefore)).toBeTruthy()
-
-            const relayRegisterReward = await oouContract.relayRegisterReward()
-            expect(balanceAfter.toString()).toEqual(
-                balanceBefore
-                    .sub(receipt.gasUsed.mul(tx.gasPrice))
-                    .add(relayRegisterReward)
-                    .toString()
-            )
-
             tokenId ++
         }
+    })
+
+    test('getTokenIdsByAddress() should return token IDs by address', async () => {
+        const wallet = userWallets[0]
+        const oouContract = contracts.OneOfUs.connect(wallet)
+        const tokenIds = await oouContract.getTokenIdsByAddress(wallet.address)
+        expect(tokenIds).toHaveLength(2)
+        expect(tokenIds[0].toNumber()).toEqual(0)
+        expect(tokenIds[1].toNumber()).toEqual(2)
     })
 
     test('double registration with the same token id should fail', async () => {
@@ -230,13 +222,11 @@ describe('the anonymous attendees-only forum app', () => {
         // token ID 0 was already used earlier
         const tokenId = 0
 
-        const sig = await signForRegistration(wallet, idComm, tokenId)
 
         try {
             const tx = await oouContract.register(
                 idComm.toString(),
                 tokenId,
-                sig,
                 { gasLimit: 900000 }, // setting the gasLimit overrides gas estimation
             )
             const receipt = await tx.wait()
@@ -262,13 +252,11 @@ describe('the anonymous attendees-only forum app', () => {
         await mintTx.wait()
 
         const oouContract = contracts.OneOfUs.connect(wallet)
-        const sig = await signForRegistration(wallet, idComm, tokenId)
 
         try {
             const tx = await oouContract.register(
                 idComm.toString(),
                 tokenId,
-                sig,
                 { gasLimit: 900000 }, // setting the gasLimit overrides gas estimation
             )
             const receipt = await tx.wait()
@@ -307,15 +295,14 @@ describe('the anonymous attendees-only forum app', () => {
         expect(leaves[0].toString()).toEqual(genIdentityCommitment(identity).toString())
 
         const semaphoreContract = contracts.Semaphore.connect(wallet)
-        const tree = await genTree(12, leaves)
-        const isInRootHistory = await semaphoreContract.isInRootHistory(await tree.root())
+        const tree = await genTree(config.chain.semaphoreTreeDepth, leaves)
 
         const result = await genWitness(
             answerHash,
             circuit,
             identity,
             leaves,
-            12,
+            config.chain.semaphoreTreeDepth,
             BigInt(questionHash),
         )
 

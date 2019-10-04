@@ -1,4 +1,5 @@
 **/build
+.tsbuildinfo
 contracts/sol/semaphore/*
 config/*.yaml
 contracts/abi/
@@ -6,6 +7,10 @@ frontend/server.cert
 frontend/server.key
 frontend/dist/*
 frontend/ts/abi/*
+frontend/abi/*
+backend/ts/abi/*
+backend/abi/*
+backend/snarks/*
 frontend/ts/exported_config.json
 .etherlime-store/
 frontend/.cache/

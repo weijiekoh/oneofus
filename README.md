@@ -44,8 +44,6 @@ If the signature is signed by a registered user, return:
 
 Otherwise, return an `NO_SUCH_USER` error.
 
-If the signature is invalid (i.e. of an incorrect length), return an `INVALID_SIG` error.
-
 #### oou_list_qns
 
 Parameters: none

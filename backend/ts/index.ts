@@ -1,6 +1,7 @@
 require('module-alias/register')
 import Ajv from 'ajv'
 import Koa from 'koa';
+import Knex from 'knex'
 import bodyParser from 'koa-bodyparser'
 
 import helmet from 'koa-helmet'
@@ -8,6 +9,10 @@ import helmet from 'koa-helmet'
 import { config } from 'ao-config'
 import { router } from './routes'
 import * as JsonRpc from './jsonRpc'
+
+import { Model } from 'objection'
+import Question from './models/Question'
+import { genError, BackendErrorNames, } from './errors'
 
 //const ajv = new Ajv({ missingRefs: 'ignore' })
 
@@ -115,6 +120,7 @@ const createApp = () => {
 }
 
 const main = async () => {
+    await bindDb()
     const port = config.get('backend.port')
     const app = createApp()
     app.listen(port)
@@ -122,8 +128,26 @@ const main = async () => {
     console.log('Running server on port', port)
 }
 
+const bindDb = async () => {
+    const connErr = genError(
+        BackendErrorNames.BACKEND_DB_NOT_CONNECTED,
+        `Could not connect to the DB at ${config.backend.db.connection.host}:${config.backend.db.connection.port}`
+    )
+
+    const knex = Knex(config.backend.db)
+    Model.knex(knex)
+
+    // Wait for the DB to be active
+    const r = await knex.raw('select 1+1 as result')
+    if (r.rows[0].result !== 2) { 
+        throw connErr 
+    }
+
+    return knex
+}
+
 if (require.main === module) {
     main()
 }
 
-export { createApp }
+export { createApp, bindDb }

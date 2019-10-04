@@ -9,9 +9,11 @@
     "server-debug": "node --inspect-brk build/index.js",
     "test": "NODE_ENV=local-dev jest --testPathPattern=__tests__/",
     "test-debug": "NODE_ENV=local-dev node --inspect-brk ./node_modules/.bin/jest --testPathPattern=__tests__/",
-    "test-oou": "NODE_ENV=local-dev jest --testPathPattern=__tests__/OneOfUs.test.ts",
-    "test-oou-debug": "NODE_ENV=local-dev node --inspect-brk ./node_modules/.bin/jest --testPathPattern=__tests__/OneOfUs.test.ts",
-    "build": "tsc"
+    "test-api": "NODE_ENV=local-dev jest --testPathPattern=__tests__/Api.test.ts",
+    "test-api-debug": "NODE_ENV=local-dev node --inspect-brk ./node_modules/.bin/jest --testPathPattern=__tests__/Api.test.ts",
+    "build": "./scripts/copyVerificationKey.sh && tsc",
+    "migrate-up": "knex --knexfile build/knexfile.js migrate:latest",
+    "migrate-down": "knex --knexfile build/knexfile.js migrate:rollback"
   },
   "author": "Koh Wei Jie",
   "license": "GPL-3.0-or-later",
@@ -22,13 +24,16 @@
     "ajv": "^6.10.0",
     "ao-config": "1.0.0",
     "ao-contracts": "1.0.0",
-    "ethereumjs-util": "^6.1.0",
     "ethers": "^4.0.37",
+    "knex": "0.15.2",
     "koa": "^2.8.2",
     "koa-bodyparser": "^4.2.1",
     "koa-helmet": "^4.2.0",
-    "libsemaphore": "0.0.6",
+    "libsemaphore": "^0.0.9",
     "module-alias": "^2.2.0",
+    "objection": "1.4.0",
+    "objection-db-errors": "1.1.1",
+    "pg": "^7.12.1",
     "verror": "^1.10.0"
   },
   "devDependencies": {

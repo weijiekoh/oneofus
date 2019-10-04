@@ -19,10 +19,6 @@ contract OneOfUs is Ownable {
     // their transaction
     uint256 public postQuestionFee = 0.05 ether;
 
-    // The reward that a relayer will receive if they relay a register()
-    // transaction
-    uint256 public relayRegisterReward = 0.02 ether;
-
     // The reward that a relayer will receive if they relay an answerQuestion()
     // transaction
     uint256 public relayAnswerReward = 0.01 ether;
@@ -55,38 +51,10 @@ contract OneOfUs is Ownable {
 
     /*
      * @param _newAmt The new amount to set
-     * Sets the value of relayRegisterReward. Only the owner can do this.
-     */
-    function setRelayRegisterReward(uint256 _newAmt) public onlyOwner {
-        relayRegisterReward = _newAmt;
-    }
-
-    /*
-     * @param _newAmt The new amount to set
      * Sets the value of relayAnswerReward. Only the owner can do this.
      */
     function setRelayAnswerReward(uint256 _newAmt) public onlyOwner {
         relayAnswerReward = _newAmt;
-    }
-
-    /*
-     * @param _tokenId The ERC721 POAP token ID
-     * Returns true/false depending on whether the user has already registered
-     * their token with ID _tokenId
-     */
-    function isTokenIdRegistered(uint256 _tokenId) public view returns (bool) {
-        return registeredTokenIds[_tokenId];
-    }
-
-    /*
-     * @param _tokenId The ERC721 POAP token ID
-     * A convenience view function for clients to check whether register() will
-     * pass or fail because of the reasons listed in `checkRegistrationToken()`
-     */
-    function verifyRegistrationToken(uint256 _tokenId) public view returns (bool) {
-        return 
-            isTokenIdRegistered(_tokenId) == false && 
-            poap.tokenEvent(_tokenId) == poapEventId;
     }
 
     /*
@@ -112,92 +80,20 @@ contract OneOfUs is Ownable {
      *        generated. We don't use EIP712 as it's not supported on some
      *        hardware wallets yet.
      * Allows a user to register their identity as long as they own a valid
-     * POAP token for the current event. Anyone can relay this transaction and
-     * receive a reward as long as the signature `_signature` is truly signed
-     * by the token's owner.
+     * POAP token for the current event. 
      */
     function register(
 		uint256 _identityCommitment,
-		uint256 _tokenId,
-		bytes memory _signature
+		uint256 _tokenId
 	)
         checkRegistrationToken(_tokenId)
     public {
-        // Recover the address of the private key used to sign the data.
-        // This proves that the token owner's true intent to register their
-        // token and identity commmitment.
-        bytes32 hash = keccak256(abi.encode(_identityCommitment, _tokenId));
-        address recoveredSigner = ECDSA.recover(
-			keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)),
-            _signature
-        );
-
-        require(recoveredSigner == poap.ownerOf(_tokenId), "OneOfUs: signer does not own this token");
+        require(msg.sender == poap.ownerOf(_tokenId), "OneOfUs: signer does not own this token");
 
         registeredTokenIds[_tokenId] = true;
         semaphore.insertIdentity(_identityCommitment);
 
-        // reward whoever submits the transaction
-        msg.sender.transfer(relayRegisterReward);
-
         emit Registered(_identityCommitment);
-    }
-
-    /*
-     * Returns all identity commitments. Use this function to get the leaves of
-     * the Merkle tree so you can generate the witness, which is in turn needed
-     * to generate the zk-SNARK proof of membership.
-     */
-    function getLeaves() public view returns (uint256[] memory) { 
-        return semaphore.leaves(semaphore.id_tree_index());
-    }
-
-    /*
-     * Returns all question hashes
-     */
-    function getQuestions() public view returns (uint256[] memory) {
-        uint256 limit = semaphore.getNextExternalNullifierIndex();
-        uint256[] memory result = new uint256[](limit);
-        for (uint256 i; i < limit; i++){
-            result[i] = semaphore.getExternalNullifierByIndex(i);
-        }
-        return result;
-    }
-
-    /*
-     * @param _questionHash The hash of the question
-     * Returns true/false depending on whether _questionHash had previously
-     * been posted.
-     */
-    function hasQuestion(uint256 _questionHash) public view returns (bool) {
-        return semaphore.hasExternalNullifier(_questionHash);
-    }
-
-    /*
-     * Returns the fee (in wei) required to post a question.
-     */
-    function getPostQuestionFee() public view returns (uint256) {
-        return postQuestionFee;
-    }
-
-    /*
-     * Returns the reward (in wei) which a relayer can receive for relaying a
-     * register() transaction.
-     */
-    function getRelayRegisterReward() public view returns (uint256) {
-        return relayRegisterReward;
-    }
-
-    /*
-     * Returns the reward (in wei) which a relayer can receive for relaying an
-     * answerQuestion() transaction.
-     */
-    function getRelayAnswerReward() public view returns (uint256) {
-        return relayAnswerReward;
-    }
-
-    function getAnswerByIndex(uint256 _answerIndex) public view returns (bytes memory) {
-        return semaphore.signals(_answerIndex);
     }
 
     /*
@@ -254,5 +150,94 @@ contract OneOfUs is Ownable {
         msg.sender.transfer(relayAnswerReward);
 
         emit AnsweredQuestion(signalIndex, _answerHash, bytes32(input[3]));
+    }
+
+    function getTokenIdsByAddress(address _target) public view returns (uint256[] memory) {
+        uint256 balance = poap.balanceOf(_target);
+        uint256[] memory tokenIds = new uint256[](balance);
+        for (uint256 i=0; i<balance; i++) {
+            tokenIds[i] = poap.tokenOfOwnerByIndex(_target, i);
+        }
+        return tokenIds;
+    }
+
+    /*
+     * Returns all question hashes
+     */
+    function getQuestions() public view returns (uint256[] memory) {
+        uint256 limit = semaphore.getNextExternalNullifierIndex();
+        uint256[] memory result = new uint256[](limit);
+        for (uint256 i; i < limit; i++){
+            result[i] = semaphore.getExternalNullifierByIndex(i);
+        }
+        return result;
+    }
+
+    /*
+     * @param _questionHash The hash of the question
+     * Returns true/false depending on whether _questionHash had previously
+     * been posted.
+     */
+    function hasQuestion(uint256 _questionHash) public view returns (bool) {
+        return semaphore.hasExternalNullifier(_questionHash);
+    }
+
+    /*
+     * Returns the fee (in wei) required to post a question.
+     */
+    function getPostQuestionFee() public view returns (uint256) {
+        return postQuestionFee;
+    }
+
+    /*
+     * Returns the reward (in wei) which a relayer can receive for relaying an
+     * answerQuestion() transaction.
+     */
+    function getRelayAnswerReward() public view returns (uint256) {
+        return relayAnswerReward;
+    }
+
+    function getAnswerByIndex(uint256 _answerIndex) public view returns (bytes memory) {
+        return semaphore.signals(_answerIndex);
+    }
+
+    /*
+     * Returns all identity commitments. Use this function to get the leaves of
+     * the Merkle tree so you can generate the witness, which is in turn needed
+     * to generate the zk-SNARK proof of membership.
+     */
+    function getLeaves() public view returns (uint256[] memory) { 
+        return semaphore.leaves(semaphore.id_tree_index());
+    }
+
+    /*
+     * @param _tokenId The ERC721 POAP token ID
+     * A convenience view function for clients to check whether register() will
+     * pass or fail because of the reasons listed in `checkRegistrationToken()`
+     */
+    function verifyRegistrationToken(uint256 _tokenId) public view returns (bool) {
+        return 
+            isTokenIdRegistered(_tokenId) == false && 
+            poap.tokenEvent(_tokenId) == poapEventId;
+    }
+
+    /*
+     * @param _tokenId The ERC721 POAP token ID
+     * Returns true/false depending on whether the token with ID `_tokenID` has
+     * been registered
+     */
+    function isTokenIdRegistered(uint256 _tokenId) public view returns (bool) {
+        return registeredTokenIds[_tokenId];
+    }
+
+    /*
+     * @param _target The user's address
+     * @param _tokenId The user's POAP token ID
+     * Returns true if and only if the user owns the token with ID `_tokenId`,
+     * and if the token has been registered. Returns false otherwise.
+     */
+    function isRegistered(address _target, uint256 _tokenId) public view returns (bool) {
+        return isTokenIdRegistered(_tokenId) &&
+            _target == poap.ownerOf(_tokenId);
     }
 }

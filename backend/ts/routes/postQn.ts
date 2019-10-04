@@ -1,31 +1,65 @@
-import * as ethers from 'ethers'
+require('module-alias/register')
+import * as fs from 'fs'
+import * as path from 'path'
 import * as errors from '../errors'
-import * as contracts from 'ao-contracts'
+import { genQuestionHash, recoverPostQnSigner } from 'ao-contracts'
 import { genValidator } from './utils'
-import * as ethJsUtil from 'ethereumjs-util'
+import Question from '../models/Question'
+import { getContract } from './utils'
 
-const postQn = async ({ question, sig }) => {
-    debugger
-    const questionHash = contracts.genQuestionHash(question)
-    const signerAddress = ethers.utils.recoverAddress(questionHash, sig)
-    console.log(signerAddress)
-    debugger
-    return {
-        question, sig
+
+const postQn = async ({ question, tokenId, sig }) => {
+    const oouContract = getContract('OneOfUs')
+    const questionHash = genQuestionHash(question)
+
+    const signerAddress = recoverPostQnSigner(
+        sig,
+        questionHash,
+        tokenId.toString(),
+    )
+
+    // Check whether the question hash already exists in the DB
+    const qns = await Question.query()
+        .findOne('hash', '=', questionHash)
+
+    if (qns) {
+        // If so, reply with an error
+        const errorMsg = 'This question already exists'
+        throw {
+            code: errors.errorCodes.BACKEND_POST_QN_EXISTS,
+            message: errorMsg,
+            data: errors.genError(
+                errors.BackendErrorNames.BACKEND_POST_QN_EXISTS,
+                errorMsg,
+            )
+        }
     }
-    //if (message !== '') {
-        //return { message }
-    //} else {
-        //const errorMsg = 'the message param cannot be blank'
-        //throw {
-            //code: errors.errorCodes.BACKEND_ECHO_MSG_BLANK,
-            //message: errorMsg,
-            //data: errors.genError(
-                //errors.BackendErrorNames.BACKEND_ECHO_MSG_BLANK,
-                //errorMsg,
-            //)
-        //}
-    //}
+
+    // Check whether the user's POAP token has been registered on-chain
+    const isRegistered = await oouContract.isRegistered(signerAddress, tokenId.toString())
+    if (!isRegistered) {
+        const errorMsg = 'This token hasn not been registered'
+        throw {
+            code: errors.errorCodes.BACKEND_POST_QN_ADDRESS_UNREGISTERED,
+            message: errorMsg,
+            data: errors.genError(
+                errors.BackendErrorNames.BACKEND_POST_QN_ADDRESS_UNREGISTERED,
+                errorMsg,
+            )
+        }
+    }
+
+    // Store the question hash in the db
+    await Question.query()
+        .insert({
+            // @ts-ignore
+            question,
+            hash: questionHash,
+            sig,
+            createdAt: new Date(),
+        })
+
+    return { questionHash, sig }
 }
 
 const postQnRoute = {
