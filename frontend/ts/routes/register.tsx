@@ -12,7 +12,9 @@ import {
 import {
     initStorage,
     storeId,
+    hasId,
     retrieveId,
+    storeTokenId,
 } from '../storage'
 
 
@@ -34,8 +36,9 @@ const RegisterRoute = () => {
     const [registerTxStatus, setRegisterTxStatus] = useState(TxStatuses.None)
 
     let identity
-    const idStr = retrieveId()
-    if (!idStr || idStr.length === 0) {
+    if (hasId()){
+        identity = retrieveId()
+    } else {
         identity = genIdentity()
         storeId(identity)
     }
@@ -47,11 +50,13 @@ const RegisterRoute = () => {
     })
 
     const handleRegisterBtnClick = async () => {
+        const identity = retrieveId()
         const identityCommitment = genIdentityCommitment(identity)
 
         const tx = await register(context, '0x' + identityCommitment.toString(16), tokenId)
         setRegisterTxHash(tx.hash)
         setRegisterTxStatus(TxStatuses.Pending)
+        storeTokenId(tokenId)
 
         const receipt = await tx.wait()
 
@@ -99,15 +104,23 @@ const RegisterRoute = () => {
                     }
 
                     { registerTxStatus === TxStatuses.Pending &&
-                        <p>Transaction pending.</p>
-                    }
-
-                    { registerTxStatus === TxStatuses.Mined &&
-                        <p>
-                            Transaction mined. View it on <a 
+                        <p>Transaction pending. View it on <a 
                                 href={etherscanUrl(registerTxHash)}
                                 target='_blank'>Etherscan</a>.
                         </p>
+                    }
+
+                    { registerTxStatus === TxStatuses.Mined &&
+                        <div>
+                            <p>
+                                Transaction mined. View it on <a 
+                                    href={etherscanUrl(registerTxHash)}
+                                    target='_blank'>Etherscan</a>.
+                            </p>
+                            <p>
+                                You may now <a href='/vote'>post questions and vote</a>.
+                            </p>
+                        </div>
                     }
                 </div>
             </div>

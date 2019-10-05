@@ -15,10 +15,7 @@
 //    by --out.
 // 3. Link the MiMC contract address to hardcoded contract(s) (just
 //    MerkleTreeLib for now)
-// 4. Deploy the rest of the contracts, except for the RelayerReputation and RelayForwarder.
-// 5. Check whether bytecode exists on-chain at the addresses of
-//    RelayerReputation and RelayForwarder set in config.chain.contracts.
-// 6. If so, attach to them. Otherwise, deploy them.
+// 4. Deploy the rest of the contracts
 
 
 import { config } from 'ao-config'
@@ -48,12 +45,32 @@ const readFile = (abiDir: string, filename: string) => {
     return fs.readFileSync(path.join(abiDir, filename)).toString()
 }
 
+const compileAbis = async (
+    abiDir: string,
+    solDir: string,
+    solcBinaryPath: string = 'solc',
+) => {
+    shell.mkdir('-p', abiDir)
+    const solcCmd = `${solcBinaryPath} -o ${abiDir} ${solDir}/*.sol --overwrite --abi`
+    const result = execute(solcCmd)
+
+    // Copy ABIs to the frontend and backend modules
+    shell.mkdir('-p', '../frontend/abi/')
+    shell.mkdir('-p', '../backend/abi/')
+
+    shell.ls(path.join(abiDir, '*.abi')).forEach((file) => {
+        const baseName = path.basename(file)
+        shell.cp('-R', file, `../backend/abi/${baseName}.json`)
+        shell.cp('-R', file, `../frontend/abi/${baseName}.json`)
+    })
+}
+
 const compileAndDeploy = async (
     abiDir: string,
     solDir: string,
     solcBinaryPath: string = 'solc',
     rpcUrl: string = config.chain.url,
-    deployKey: string = config.chain.keys.deploy,
+    deployKeyPath: string = config.chain.keys.deployPath,
     nftAddress?: string,
 ) => {
 
@@ -75,25 +92,17 @@ const compileAndDeploy = async (
 
     shell.cp('-f', path.join(semaphorePathPrefix, '../build/verifier.sol'), semaphoreTargetPath)
 
-    // copy BurnRegistry files
-    const brPathPrefix = '../surrogeth/burnRegistry/contracts/'
-    const brTargetPath = path.join(solDir, 'burnRegistry')
-    shell.mkdir('-p', brTargetPath)
-    const brSolFiles = ['RelayerForwarder.sol', 'RelayerReputation.sol', 'Ownable.sol', 'SafeMath.sol']
-    for (let file of brSolFiles) {
-        shell.cp('-f', path.join(brPathPrefix, file), brTargetPath)
-    }
-
     // Build MiMC bytecode
     const mimcBin = buildMimcBytecode()
 
     // compile contracts
     shell.mkdir('-p', abiDir)
-    const solcCmd = `${solcBinaryPath} -o ${abiDir} ${solDir}/*.sol ${solDir}/burnRegistry/*.sol --overwrite --optimize --abi --bin`
+    const solcCmd = `${solcBinaryPath} -o ${abiDir} ${solDir}/*.sol --overwrite --optimize --abi --bin`
     const result = execute(solcCmd)
 
     // create provider and wallet
     const provider = new ethers.providers.JsonRpcProvider(rpcUrl)
+    const deployKey = fs.readFileSync(deployKeyPath).toString().trim()
     const wallet = new ethers.Wallet(deployKey, provider)
 
     // deploy MiMC
@@ -151,52 +160,6 @@ const compileAndDeploy = async (
     await tx.wait()
     console.log('Transferred ownership of the Semaphore contract')
 
-    const rfAB = readAbiAndBin('RelayerForwarder')
-    const rfContractFactory = new ethers.ContractFactory(rfAB.abi, rfAB.bin, wallet)
-    let rfContract
-
-    // check whether the RelayerForwarder contract exists
-    const rfCode = await provider.getCode(config.chain.contracts.RelayerForwarder)
-    if (rfCode.length > 2) {
-        rfContract = rfContractFactory.attach(config.chain.contracts.RelayerForwarder)
-        console.log('Using existing RelayerForwarder at', config.chain.contracts.RelayerForwarder)
-    } else {
-        rfContract = await rfContractFactory.deploy(
-            config.chain.burnRegistry.burnNum,
-            config.chain.burnRegistry.burnDenom,
-        )
-        await rfContract.deployed()
-        console.log('Deployed RelayerForwarder at', rfContract.address)
-    }
-
-    const rrAB = readAbiAndBin('RelayerReputation')
-    const rrContractFactory = new ethers.ContractFactory(rrAB.abi, rrAB.bin, wallet)
-    let rrContract
-
-    // check whether the RelayerReputation contract exists
-    const rrCode = await provider.getCode(config.chain.contracts.RelayerReputation)
-    if (rrCode.length > 2) {
-        rrContract = rrContractFactory.attach(config.chain.contracts.RelayerReputation)
-        console.log('Using existing RelayerReputation at', config.chain.contracts.RelayerReputation)
-    } else {
-        rrContract = await rrContractFactory.deploy(rfContract.address)
-        await rrContract.deployed()
-        console.log('Deployed RelayerReputation at', rrContract.address)
-
-        const tx = await rfContract.setReputation(rrContract.address)
-        await tx.wait()
-    }
-
-    // Copy ABIs to the frontend and backend modules
-    shell.mkdir('-p', '../frontend/abi/')
-
-   shell.mkdir('-p', '../backend/abi/')
-    shell.ls(path.join(abiDir, '*.abi')).forEach((file) => {
-        const baseName = path.basename(file)
-        shell.cp('-R', file, `../backend/abi/${baseName}.json`)
-        shell.cp('-R', file, `../frontend/abi/${baseName}.json`)
-    })
-
     if (config.chain.fundAndMintForTesting) {
         let i = 0
 
@@ -216,7 +179,7 @@ const compileAndDeploy = async (
             tx = await wallet.provider.sendTransaction(
                 wallet.sign({
                     nonce: await wallet.provider.getTransactionCount(wallet.address),
-                    gasPrice: 1,
+                    gasPrice: ethers.utils.parseUnits('20', 'gwei'),
                     gasLimit: 21000,
                     to: address,
                     value: ethers.utils.parseEther('1'),
@@ -235,8 +198,6 @@ const compileAndDeploy = async (
 		Semaphore: semaphoreContract,
 		NFT: nftContract,
         OneOfUs: oouContract,
-        RelayerForwarder: rfContract,
-        RelayerReputation: rrContract,
 	}
 }
 
@@ -294,18 +255,30 @@ if (require.main === module) {
         }
     )
 
+    parser.addArgument(
+        ['-a', '--abi-only'],
+        {
+            help: 'Only generate ABI files',
+            action: 'storeTrue',
+        }
+    )
+
     // parse command-line options
     const args = parser.parseArgs()
 
     const abiDir = path.resolve(args.out)
     const solDir = path.resolve(args.input)
-
-    const deployKey = args.privKey ? args.privKey : config.chain.keys.deploy
     const solcBinaryPath = args.solc ? args.solc : 'solc'
-    const rpcUrl = args.rpcUrl ? args.rpcUrl : config.chain.url
-    const nftAddress = args.mainnet ? config.chain.nftAddress : null
 
-    compileAndDeploy(abiDir, solDir, solcBinaryPath, rpcUrl, deployKey, nftAddress)
+    if (args.abi_only) {
+        compileAbis(abiDir, solDir)
+    } else {
+        const deployKeyPath = args.privKey ? args.privKey : config.chain.deployKeyPath
+        const rpcUrl = args.rpcUrl ? args.rpcUrl : config.chain.url
+        const nftAddress = args.mainnet ? config.chain.nftAddress : null
+
+        compileAndDeploy(abiDir, solDir, solcBinaryPath, rpcUrl, deployKeyPath, nftAddress)
+    }
 }
 
 export {

@@ -6,13 +6,14 @@
     "scripts": {
         "watch": "tsc --watch",
         "ganache": "./scripts/runGanache.sh",
+        "compileABIs": "node build/compileAndDeploy.js -s ~/solc-0.5.11 -o ./abi -i ./sol/ --abi-only",
         "compileAndDeploy": "node build/compileAndDeploy.js -s ~/solc-0.5.11 -o ./abi -i ./sol/",
         "compileAndDeployProd": "node build/compileAndDeploy.js -s ~/solc-0.5.11 -o ./abi -i ./sol/ -m",
         "build": "tsc",
+        "test": "NODE_ENV=local-dev jest",
+        "test-debug": "NODE_ENV=local-dev node --inspect-brk ./node_modules/.bin/jest",
         "test-oou": "NODE_ENV=local-dev jest ts/__tests__/OneOfUs.test.ts",
-        "test-oou-debug": "NODE_ENV=local-dev node --inspect-brk ./node_modules/.bin/jest --testPathPattern=__tests__/OneOfUs.test.ts",
-        "test-surrogeth": "NODE_ENV=local-dev jest ts/__tests__/Surrogeth.test.ts",
-        "test-surrogeth-debug": "NODE_ENV=local-dev node --inspect-brk ./node_modules/.bin/jest --testPathPattern=__tests__/Surrogeth.test.ts"
+        "test-oou-debug": "NODE_ENV=local-dev node --inspect-brk ./node_modules/.bin/jest --testPathPattern=__tests__/OneOfUs.test.ts"
     },
     "author": "Koh Wei Jie",
     "_moduleAliases": {
@@ -20,6 +21,7 @@
     },
     "dependencies": {
         "ao-config": "1.0.0",
+        "ao-utils": "1.0.0",
         "circom": "0.0.33",
         "circomlib": "0.0.18",
         "ethers": "4.0.37",

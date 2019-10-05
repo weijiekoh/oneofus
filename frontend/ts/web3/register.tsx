@@ -2,19 +2,8 @@ import * as ethers from 'ethers'
 const config = require('../exported_config')
 
 const oouAbi = require('../../abi/OneOfUs.abi.json')
+import { getOouContract } from './contracts'
 
-const getOouContract = async (context) => {
-    const provider = new ethers.providers.Web3Provider(
-        await context.connector.getProvider(config.chain.chainId),
-    )
-    const signer = provider.getSigner()
-
-    return new ethers.Contract(
-        config.chain.contracts.OneOfUs,
-        oouAbi,
-        signer,
-    )
-}
 /*
  * Perform a web3 transaction to register a token
  * @param context The web3-react context
@@ -37,8 +26,7 @@ const register = async (
 
         const oouContract = await getOouContract(context)
 
-        const tx = await oouContract.register(identityCommitment, tokenId)
-        return tx
+        return await oouContract.register(identityCommitment, tokenId)
     }
 }
 

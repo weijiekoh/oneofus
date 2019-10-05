@@ -1,6 +1,7 @@
 import * as React from 'react'
 const useState = React.useState
 import ReactDOM from 'react-dom'
+// @ts-ignore
 import logo from '../img/logo.png'
 
 import WalletWidget from './components/walletWidget'

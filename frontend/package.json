@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "watch": "node server.js",
-        "build": "echo 'Building frontend' && rm -rf build && parcel build index.html --no-source-maps --out-dir=build"
+        "build": "echo 'Building frontend' && ./scripts/build.sh"
     },
     "keywords": [],
     "proxy": "http://localhost:8000",
@@ -16,6 +16,7 @@
     },
     "dependencies": {
         "ao-config": "1.0.0",
+        "ao-utils": "1.0.0",
         "bulma": "^0.7.5",
         "ethers": "^4.0.37",
         "libsemaphore": "^0.0.10",

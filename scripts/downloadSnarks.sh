@@ -1,9 +1,9 @@
 #!/bin/bash
 
-VERIFICATION_KEY_JSON="https://www.dropbox.com/s/5zui5nm1yoe3qsw/verification_key.json?dl=1"
-PROVING_KEY_BIN="https://www.dropbox.com/s/ojvkoaotz7nfj8g/proving_key.bin?dl=1"
-CIRCUIT_JSON="https://www.dropbox.com/s/72if9g7nscekn0k/circuit.json?dl=1"
-VERIFIER_SOL="https://www.dropbox.com/s/vxl9uxqcecofc1q/verifier.sol?dl=1"
+VERIFICATION_KEY_JSON="https://oneofus.blob.core.windows.net/snarks/verification_key.json"
+PROVING_KEY_BIN="https://oneofus.blob.core.windows.net/snarks/proving_key.bin"
+CIRCUIT_JSON="https://oneofus.blob.core.windows.net/snarks/circuit.json"
+VERIFIER_SOL="https://oneofus.blob.core.windows.net/snarks/verifier.sol"
 
 CIRCUIT_JSON_PATH="semaphore/semaphorejs/build/circuit.json"
 PROVING_KEY_BIN_PATH="semaphore/semaphorejs/build/proving_key.bin"
@@ -14,12 +14,12 @@ mkdir -p semaphore/semaphorejs/build
 
 if [ ! -f "$CIRCUIT_JSON_PATH" ]; then
     echo "Downloading circuit.json"
-    wget --quiet $CIRCUIT_JSON -O $CIRCUIT_JSON_PATH
+    wget --quiet -O - $CIRCUIT_JSON | gunzip -c > $CIRCUIT_JSON_PATH
 fi
 
 if [ ! -f "$PROVING_KEY_BIN_PATH" ]; then
     echo "Downloading proving_key.bin"
-    wget --quiet $PROVING_KEY_BIN -O $PROVING_KEY_BIN_PATH
+    wget --quiet -O - $PROVING_KEY_BIN | gunzip -c > $PROVING_KEY_BIN_PATH
 fi
 
 if [ ! -f "$VERIFICATION_KEY_PATH" ]; then

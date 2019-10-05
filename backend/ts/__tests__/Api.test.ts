@@ -10,11 +10,15 @@ import * as ethers from 'ethers'
 import { post } from './utils'
 import {
     compileAndDeploy,
+} from 'ao-contracts'
+
+import {
     signForPostQn,
     recoverPostQnSigner,
     genQuestionHash,
     genAnswerHash,
-} from 'ao-contracts'
+} from 'ao-utils'
+
 import {
     genTree,
     genIdentity,
@@ -31,7 +35,7 @@ import {
 
 jest.setTimeout(90000)
 
-const PORT = config.get('backend.port')
+const PORT = config.get('backend.port') + 1
 const HOST = config.get('backend.host') + ':' + PORT.toString()
 
 const OPTS = {
@@ -66,6 +70,8 @@ const verifyingKeyPath = path.join(
 ) 
 const verifyingKey = parseVerifyingKeyJson(fs.readFileSync(verifyingKeyPath).toString())
 
+const deployKey = fs.readFileSync(config.chain.deployKeyPath).toString().trim()
+
 describe('Backend API', () => {
     beforeAll(async () => {
         await bindDb()
@@ -76,7 +82,7 @@ describe('Backend API', () => {
             path.resolve('../contracts/sol'),
             config.solcBinaryPath,
             config.chain.url,
-            config.chain.keys.deploy,
+            config.chain.deployKeyPath,
         )
 
         for (let sk of config.backend.test.keys) {
@@ -86,7 +92,7 @@ describe('Backend API', () => {
             identities[wallet.address] = genIdentity()
         }
 
-        adminWallet = new ethers.Wallet(config.chain.keys.deploy)
+        adminWallet = new ethers.Wallet(deployKey)
         // give away ETH
         const amountEth = '1'
         for (let wallet of userWallets) {
@@ -161,6 +167,10 @@ describe('Backend API', () => {
                 },
             )
 
+            if (resp.data.error) {
+                console.log(resp.data.error)
+            }
+
             expect(resp.data.result.questionHash).toEqual(questionHash)
             expect(resp.data.result.sig).toEqual(sig)
         })
@@ -210,7 +220,7 @@ describe('Backend API', () => {
         })
     })
 
-    describe('oou_post_answer', () => {
+    describe('oou_post_ans', () => {
         let answerData
 
         test('should post a valid answer successfully', async () => {
@@ -304,7 +314,7 @@ describe('Backend API', () => {
 
             expect(resp.data.result.length > 0).toBeTruthy()
             expect(resp.data.result[0]).toHaveProperty('id')
-            expect(resp.data.result[0]).toHaveProperty('questionId')
+            expect(resp.data.result[0]).toHaveProperty('questionHash')
             expect(resp.data.result[0]).toHaveProperty('answer')
             expect(resp.data.result[0]).toHaveProperty('hash')
             expect(resp.data.result[0]).toHaveProperty('publicSignals')

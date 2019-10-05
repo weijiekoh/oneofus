@@ -23,6 +23,7 @@
   "dependencies": {
     "ajv": "^6.10.0",
     "ao-config": "1.0.0",
+    "ao-utils": "1.0.0",
     "ao-contracts": "1.0.0",
     "ethers": "^4.0.37",
     "knex": "0.15.2",

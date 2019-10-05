@@ -5,6 +5,7 @@ import echoRoute from './echo'
 import postQnRoute from './postQn'
 import listQnsRoute from './listQns'
 import listAnsRoute from './listAns'
+import listAnsToQnRoute from './listAnsToQn'
 import postAnsRoute from './postAns'
 import backendStatusRoute from './status'
 import { config } from 'ao-config'
@@ -20,10 +21,11 @@ const routes = {
     oou_list_qns: listQnsRoute,
     oou_post_ans: postAnsRoute,
     oou_list_ans: listAnsRoute,
+    oou_list_ans_to_qn: listAnsToQnRoute,
 }
 
 // Dev-only routes for testing
-if (config.get('env') !== 'production') {
+if (config.env && config.env !== 'production') {
     routes['test_echo'] = echoRoute
 }
 

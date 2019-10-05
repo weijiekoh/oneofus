@@ -27,10 +27,45 @@ const post = async (
     }
 }
 
-const fetchQns = () => {
+const listQns = () => {
     return post('oou_list_qns', {})
 }
 
+const listAnsToQn = (questionHash: string) => {
+    return post('oou_list_ans_to_qn', { questionHash })
+}
+
+const postQn = (question: string, tokenId: number, sig: string) => {
+    return post('oou_post_qn', { question, tokenId, sig})
+}
+
+const postAns = ({
+    questionHash,
+    answer,
+    proof,
+    publicSignals,
+}) => {
+    return post(
+        'oou_post_ans',
+        { 
+            questionHash, answer, proof, publicSignals
+        },
+    )
+}
+
+const fetchWithoutCache = (
+    url: string,
+) => {
+    return fetch(
+        url,
+        {cache: "no-store"},
+    )
+}
+
 export {
-    fetchQns,
+    fetchWithoutCache,
+    listQns,
+    postQn,
+    postAns,
+    listAnsToQn,
 }

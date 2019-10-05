@@ -2,7 +2,7 @@ import { config } from 'ao-config'
 import * as path from 'path'
 import * as ethers from 'ethers'
 import * as fs from 'fs'
-import { genQuestionHash } from '../index'
+import { genQuestionHash } from 'ao-utils'
 import { compileAndDeploy } from '../compileAndDeploy'
 import {
     genIdentity,
@@ -21,7 +21,7 @@ const extractRevertReason = (e: any) => {
     return e.data[e.transactionHash].reason
 }
 
-jest.setTimeout(30000)
+jest.setTimeout(90000)
 
 const circuitPath = path.join(
     __dirname,
@@ -66,7 +66,7 @@ describe('the anonymous attendees-only forum app', () => {
             path.resolve('./sol'),
             config.solcBinaryPath,
             config.chain.url,
-            config.chain.keys.deploy,
+            config.chain.deployKeyPath,
         )
 
         adminWallet = contracts.NFT.signer
@@ -243,7 +243,7 @@ describe('the anonymous attendees-only forum app', () => {
         const idComm = genIdentityCommitment(genIdentity())
 
         // mint a token with a different event id
-        const tokenId = 2
+        const tokenId = Date.now()
         const mintTx = await contracts.NFT.mintToken(
             config.chain.poapEventId + 1,
             tokenId,
@@ -254,12 +254,14 @@ describe('the anonymous attendees-only forum app', () => {
         const oouContract = contracts.OneOfUs.connect(wallet)
 
         try {
+            debugger
             const tx = await oouContract.register(
                 idComm.toString(),
                 tokenId,
                 { gasLimit: 900000 }, // setting the gasLimit overrides gas estimation
             )
             const receipt = await tx.wait()
+            debugger
         } catch (e) {
             expect(extractRevertReason(e)).toEqual('OneOfUs: wrong POAP event ID')
         }
@@ -281,8 +283,9 @@ describe('the anonymous attendees-only forum app', () => {
 
         const semaphoreContract = contracts.Semaphore.connect(wallet)
         expect(await semaphoreContract.hasExternalNullifier(questionHash)).toBeTruthy()
+
         const questions = await oouContract.getQuestions()
-        console.log(questions)
+        expect(questions[questions.length - 1].toHexString()).toEqual('0x' + BigInt(questionHash).toString(16))
     })
 
     test('answering a question should work', async () => {
@@ -357,15 +360,6 @@ describe('the anonymous attendees-only forum app', () => {
         expect(await oouContract.getPostQuestionFee()).toEqual(newVal)
         tx = await oouContract.setPostQuestionFee(originalVal)
         expect(await oouContract.getPostQuestionFee()).toEqual(originalVal)
-        await tx.wait()
-
-        // relayRegisterReward
-        originalVal = await oouContract.getRelayRegisterReward()
-        tx = await oouContract.setRelayRegisterReward(newVal)
-        await tx.wait()
-        expect(await oouContract.getRelayRegisterReward()).toEqual(newVal)
-        tx = await oouContract.setRelayRegisterReward(originalVal)
-        expect(await oouContract.getRelayRegisterReward()).toEqual(originalVal)
         await tx.wait()
 
         // relayAnswerReward

@@ -6,7 +6,7 @@ import Web3Provider from 'web3-react'
 import Nav from './nav'
 import RegisterRoute from './routes/register'
 import AboutRoute from './routes/about'
-import MainRoute from './routes/main'
+import VoteRoute from './routes/vote'
 import connectors from './web3'
 
 import {
@@ -24,7 +24,8 @@ const App = () => {
                 <div className='section'>
                     <div className='container'>
                         <Router>
-                            <Route path='/' exact component={MainRoute} />
+                            <Route path='/' exact component={VoteRoute} />
+                            <Route path='/vote' exact component={VoteRoute} />
                             <Route path='/about' exact component={AboutRoute} />
                             <Route path='/register' exact component={RegisterRoute} />
                         </Router>

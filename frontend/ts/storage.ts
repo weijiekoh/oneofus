@@ -15,6 +15,7 @@ const localStorage = window.localStorage
 // The storage key depends on the mixer contracts to prevent conflicts
 const oouPrefix = config.chain.contracts.OneOfUs.slice(2).toLowerCase()
 const key = `ONEOFUS_${oouPrefix}`
+const tokenIdKey = `POAP_TOKENID_${oouPrefix}`
 
 const initStorage = () => {
     if (!localStorage.getItem(key)) {
@@ -22,16 +23,38 @@ const initStorage = () => {
     }
 }
 
+const storeTokenId = (tokenId: string) => {
+    localStorage.setItem(tokenIdKey, tokenId)
+}
+
+const retrieveTokenId = () => {
+    return localStorage.getItem(tokenIdKey)
+}
+
 const storeId = (identity: Identity) => {
     localStorage.setItem(key, serialiseIdentity(identity))
 }
 
-const retrieveId = (): string | null => {
-    return localStorage.getItem(key)
+const retrieveId = (): Identity => {
+    return unSerialiseIdentity(localStorage.getItem(key))
+}
+
+const hasId = (): boolean => {
+    const d = localStorage.getItem(key)
+    return d != null && d.length > 0
+}
+
+const hasTokenId = (): boolean => {
+    const d = localStorage.getItem(tokenIdKey)
+    return d != null && d.length > 0
 }
 
 export {
     initStorage,
     storeId,
     retrieveId,
+    storeTokenId,
+    retrieveTokenId,
+    hasId,
+    hasTokenId,
 }

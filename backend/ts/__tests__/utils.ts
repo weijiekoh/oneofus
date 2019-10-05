@@ -3,7 +3,7 @@ import * as snarkjs from 'snarkjs'
 import * as JsonRpc from '../jsonRpc'
 import { config } from 'ao-config'
 
-const PORT = config.get('backend.port')
+const PORT = config.get('backend.port') + 1
 const HOST = config.get('backend.host') + ':' + PORT.toString()
 
 const OPTS = {

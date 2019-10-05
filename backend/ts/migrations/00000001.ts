@@ -11,10 +11,9 @@ exports.up = (knex: Knex) =>  {
 
         knex.schema.createTable('Answer', (table: Knex.TableBuilder) => {
             table.increments('id').primary()
-            table.integer('questionId').unsigned().notNullable()
-            table.foreign('questionId').references('Question.id')
-            table.text('answer').unique().notNullable()
-            table.text('hash', 66).unique().notNullable()
+            table.string('questionHash', 66).notNullable()
+            table.text('answer').notNullable()
+            table.text('hash', 66).notNullable()
             table.text('proof').unique().notNullable()
             table.text('publicSignals').unique().notNullable()
             table.text('nullifierHash').unique().notNullable()

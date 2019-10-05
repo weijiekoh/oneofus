@@ -7,7 +7,7 @@ import {
     genQuestionHash,
     genAnswerHash,
     recoverPostQnSigner,
-} from 'ao-contracts'
+} from 'ao-utils'
 import { genValidator } from './utils'
 import Question from '../models/Question'
 import Answer from '../models/Answer'
@@ -50,7 +50,7 @@ const postAns = async ({ questionHash, answer, proof, publicSignals }) => {
         .where('nullifierHash', nullifierHash)
     
     if (ans.length > 0) {
-        const errorMsg = 'This answer already exists'
+        const errorMsg = 'The user has already answered this question'
         throw {
             code: errors.errorCodes.BACKEND_POST_ANSWER_EXISTS,
             message: errorMsg,
@@ -82,13 +82,15 @@ const postAns = async ({ questionHash, answer, proof, publicSignals }) => {
         }
     }
 
+    // @ts-ignore
+    console.log(`Storing verified answer to question ${qns.id}: ${answer}`)
     // store the answer
     await Answer.query()
         .insert({
             // @ts-ignore
             answer,
             // @ts-ignore
-            questionId: qns.id,
+            questionHash: qns.hash,
             hash: answerHash,
             nullifierHash,
             proof,
