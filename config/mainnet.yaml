@@ -1,0 +1,35 @@
+---
+env: 'mainnet'
+solcBinaryPath: '/usr/bin/solc'
+
+frontend:
+  supportedNetworkName: 'the mainnet'
+  supportedNetwork: 1
+
+backend:
+  host: "http://localhost"
+  port: 3000
+  db:
+    client: 'pg'
+    connection:
+      host: 'oou-db'
+      port: 5432
+      user: 'postgres'
+      database: 'oneofus'
+
+snarkUrls:
+  circuit: "https://oneofus.blob.core.windows.net/snarks/circuit.json"
+  provingKey: "https://oneofus.blob.core.windows.net/snarks/proving_key.bin"
+
+chain:
+  url: "https://mainnet.infura.io/v3/5d37c494621a43558d77c90e368d4022"
+  chainId: 1
+  nftAddress:  "0x22c1f6050e56d2876009903609a2cc3fef83b415"
+  poapEventId: 69
+  semaphoreTreeDepth: 12
+  deployKeyPath: '/home/ubuntu/OOU_MAINNET_DEPLOY_KEY'
+  contracts:
+    MiMC: "0x8b1c412A99eAcf771675C8FAb55489F086cfc285"
+    NFT: "0x22c1f6050e56d2876009903609a2cc3fef83b415"
+    Semaphore: "0x6056A8eDDA3A7493C12b066d272CE220bD839399"
+    OneOfUs: "0x346Ea3BDd7e42519214cb7668dAc8711c27B75dd"

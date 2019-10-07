@@ -2,6 +2,7 @@
 .tsbuildinfo
 contracts/sol/semaphore/*
 config/*.yaml
+!config/mainnet.yaml
 contracts/abi/
 frontend/server.cert
 frontend/server.key
