@@ -56,7 +56,7 @@ const WalletWidget = () => {
             return (
                 <p>
                     { circleIcon('warn') }
-                    Please connect to the {networkName} testnet.
+                    Please connect to {networkName}.
                 </p>
             )
         } else {

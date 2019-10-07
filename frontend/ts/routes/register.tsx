@@ -43,11 +43,14 @@ const RegisterRoute = () => {
         storeId(identity)
     }
 
-    getTokenIds(context).then((tokenIds) => {
-        if (tokenIds && tokenIds.length > 0) {
-            setTokenId(tokenIds[0].toString())
-        }
-    })
+    // OneOfUs's getTokenIdsByAddress doesn't filter by event ID, so just ask
+    // participants to look it up on Etherscan
+    //
+    //getTokenIds(context).then((tokenIds) => {
+        //if (tokenIds && tokenIds.length > 0) {
+            //setTokenId(tokenIds[0].toString())
+        //}
+    //})
 
     const handleRegisterBtnClick = async () => {
         const identity = retrieveId()

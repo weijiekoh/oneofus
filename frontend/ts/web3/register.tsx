@@ -26,7 +26,7 @@ const register = async (
 
         const oouContract = await getOouContract(context)
 
-        return await oouContract.register(identityCommitment, tokenId)
+        return await oouContract.register(identityCommitment, tokenId, { gasLimit: 900000})
     }
 }
 

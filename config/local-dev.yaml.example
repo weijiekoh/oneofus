@@ -2,8 +2,43 @@
 env: 'local-dev'
 solcBinaryPath: '/usr/bin/solc'
 
+frontend:
+  supportedNetworkName: 'local'
+  supportedNetwork: 1234
+
+backend:
+  host: "http://localhost"
+  port: 8002
+  test:
+    keys:
+      - '0x1111111111111111111111111111111111111111111111111111111111111111'
+      - '0x2222222222222222222222222222222222222222222222222222222222222222'
+      - '0x3333333333333333333333333333333333333333333333333333333333333333'
+      - '0x4444444444444444444444444444444444444444444444444444444444444444'
+  db:
+    client: 'pg'
+    connection:
+      host: '127.0.0.1'
+      port: 5001
+      user: 'postgres'
+      database: 'oneofus'
+
+snarkUrls:
+  circuit: "http://localhost:8000/build/circuit.json"
+  provingKey: "http://localhost:8000/build/proving_key.json"
+
 chain:
-  url: "http://localhost:8005"
+  url: "http://localhost:8545"
+  chainId: 1234
   nftAddress: "0x22C1f6050E56d2876009903609a2cC3fEf83B415"
-  keys:
-    deploy: '0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3'
+  fundAndMintForTesting:
+    - '0x5CbDd86a2FA8Dc4bDdd8a8f69dBa48572EeC07FB'
+    - '0x7564105E977516C53bE337314c7E53838967bDaC'
+  poapEventId: 123
+  semaphoreTreeDepth: 12 
+  deployKeyPath: '/home/di/OOU_TESTNET_DEPLOY_KEY'
+  contracts:
+    MiMC: "0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0"
+    Semaphore: "0x345cA3e014Aaf5dcA488057592ee47305D9B3e10"
+    NFT: "0xF12b5dd4EAD5F743C6BaA640B0216200e89B60Da"
+    OneOfUs: "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF"

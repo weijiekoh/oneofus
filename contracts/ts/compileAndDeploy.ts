@@ -109,7 +109,9 @@ const compileAndDeploy = async (
     const mimcAbi = mimcGenContract.abi
     const mimcContractFactory = new ethers.ContractFactory(mimcAbi, mimcBin, wallet)
 
-    const mimcContract = await mimcContractFactory.deploy()
+    const mimcContract = await mimcContractFactory.deploy(
+        {gasPrice: ethers.utils.parseUnits('10', 'gwei')}
+    )
     await mimcContract.deployed()
     console.log('MiMC deployed at', mimcContract.address)
 
@@ -139,7 +141,10 @@ const compileAndDeploy = async (
     // deploy Semaphore
     const semaphoreAB = readAbiAndBin('Semaphore')
     const semaphoreContractFactory = new ethers.ContractFactory(semaphoreAB.abi, semaphoreAB.bin, wallet)
-    const semaphoreContract = await semaphoreContractFactory.deploy(config.chain.semaphoreTreeDepth, 0, 0)
+    const semaphoreContract = await semaphoreContractFactory.deploy(
+        config.chain.semaphoreTreeDepth, 0, 0,
+        {gasPrice: ethers.utils.parseUnits('10', 'gwei')},
+    )
     await semaphoreContract.deployed()
 
     console.log('Deployed Semaphore at', semaphoreContract.address)
@@ -151,6 +156,7 @@ const compileAndDeploy = async (
         nftContract.address,
         semaphoreContract.address,
         config.chain.poapEventId,
+        {gasPrice: ethers.utils.parseUnits('10', 'gwei')},
     )
     await oouContract.deployed()
     console.log('Deployed OneOfUs at', oouContract.address)

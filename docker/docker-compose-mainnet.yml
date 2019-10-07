@@ -1,0 +1,47 @@
+version: '3.7'
+services: 
+
+  oou-db:
+    container_name: oou-db
+    build:
+      context: ../backend/db
+    ports:
+      - "5002:5432"
+    expose:
+      - "5432"
+    networks:
+      - "oou-net"
+    environment:
+      - NODE_ENV=mainnet
+
+  oou-backend: 
+    container_name: oou-backend
+    depends_on:
+      - "oou-db"
+    build:
+      context: ../backend
+    ports:
+      - "3000:3000"
+    expose:
+      - "3000"
+    networks:
+      - "oou-net"
+    environment:
+      - NODE_ENV=mainnet
+
+  oou-frontend:
+    container_name: oou-frontend
+    depends_on:
+      - "oou-backend"
+    build:
+      context: ../frontend
+    ports:
+      - "80:8001"
+    networks:
+      - "oou-net"
+    environment:
+      - NODE_ENV=mainnet
+
+
+networks:
+  oou-net:
