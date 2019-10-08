@@ -13,80 +13,19 @@ Attendees can register themselves to the contract as long as they own a Devcon
 5 POAP token. When they wish to respond to a question, they can use OneOfUs to
 generate a proof of their initial registration. This proof does not reveal
 their identity, but only their membership in the set of registered identities.
-They can then send their proof and an answer to a relayer, who performs a
-transaction to verify their membership and broadcast their answer. They relayer
-receives a reward for their service, which is drawn from the fees paid out by
-those who submit questions.
 
-There is an Ethereum contract to which anyone can submit questions. When a user
-submits a question, they have to pay a 0.05 ETH fee.
+For my workshop at Devcon, posting questions and answers are done entirely
+off-chain, so that participants won't have to pay any gas except for identity
+registration. The smart contract, however, already supports the ability for
+registered users to post and answer questions.
+
+Like the smart contract which keeps track of nullifier hashes and rejects
+double signalling, the off-chain backend prevents double-voting.
+
+The contract requires users to pay extra ETH when they as a question, and these
+funds are used to pay [Surrogeth](https://github.com/lsankar4033/surrogeth/)
+relayers to submit proofs on behalf of users when they wish to answer questions.
 
 Under the hood, OneOfUs uses
 [Semaphore](https://github.com/kobigurk/semaphore), a zero-knowledge signalling
 gadget. Read more about it [here](https://medium.com/coinmonks/to-mixers-and-beyond-presenting-semaphore-a-privacy-gadget-built-on-ethereum-4c8b00857c9b).
-
-### Backend API
-
-#### oou_post_qn
-
-Parameters:
-
-- `question` as a `string` which is the plaintext of the question. Max 280 characters.
-
-- `sig` as an `ethereumSignature` which is the signature of the question hashed with Keccak256
-
-Returns:
-
-If the signature is signed by a registered user, return:
-
-- `questionHash` as a `bytes32` which is the Keccak256 hash of the question
-
-Otherwise, return an `NO_SUCH_USER` error.
-
-#### oou_list_qns
-
-Parameters: none
-
-Returns:
-
-- `questions`: as an list of objects. Each object contains the following keys:
-
-    - `datetime` as a `number`: the time at which the question was posted, in Unix time
-
-    - `question` as a `string`: the text of the question
-    
-    - `sig` as the signature provided by the user who posted the question
-
-#### oou_post_answer
-
-Parameters:
-
-- `questionHash` as a `string` which is the Keccak256 hash of the question
-
-- `answer` as a `string` which is the answer to the question
-
-- `proof` as a `string` which is the stringified JSON representaiton of the
-  zk-SNARK proof of the user's membership in the list of registered users. All
-  `BigInts` should be in string form.
-
-If the proof is valid, return:
-
-- `answerHash` as a `hexstring` which is the Keccak256 hash of the answer
-
-Otherwise, return an `INVALID_PROOF` error.
-
-#### oou_list_answers
-
-Parameters:
-
-- `questionHash` as a `string` which is the Keccak256 hash of the question
-
-Returns:
-
-- `answer`: as an list of objects. Each object contains the following keys:
-
-    - `datetime` as a `number`: the time at which the answer was posted, in Unix time
-
-    - `answer` as a `string`: the text of the answer
-    
-    - `proof` as the zk-SNARK proof provided by the user who posted the answer
