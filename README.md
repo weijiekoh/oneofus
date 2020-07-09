@@ -5,7 +5,7 @@ and lets them, and only them, reply anonymously.
 
 ## How it works
 
-<img src="./screenshot.png" />
+<img src="./screenshot.png" width=500 />
 
 Each attendee at Devcon 5 will receive a non-fungible
 [Proof of Attendance Token](http://poap.xyz) (POAP). We assume that only Devcon
