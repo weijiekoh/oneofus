@@ -5,6 +5,8 @@ and lets them, and only them, reply anonymously.
 
 ## How it works
 
+<img src="./screenshot.png" />
+
 Each attendee at Devcon 5 will receive a non-fungible
 [Proof of Attendance Token](http://poap.xyz) (POAP). We assume that only Devcon
 5 attendees own POAP tokens associated with this event.
@@ -27,5 +29,8 @@ funds are used to pay [Surrogeth](https://github.com/lsankar4033/surrogeth/)
 relayers to submit proofs on behalf of users when they wish to answer questions.
 
 Under the hood, OneOfUs uses
-[Semaphore](https://github.com/kobigurk/semaphore), a zero-knowledge signalling
+[Semaphore](https://github.com/appliedzkp/semaphore), a zero-knowledge signalling
 gadget. Read more about it [here](https://medium.com/coinmonks/to-mixers-and-beyond-presenting-semaphore-a-privacy-gadget-built-on-ethereum-4c8b00857c9b).
+
+Please note that the version of Semaphore that OneOfUs uses is outdated. If you
+wish to implment a voting app in Semaphore, please use the latest version.
